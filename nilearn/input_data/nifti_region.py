@@ -104,7 +104,7 @@ class NiftiLabelsMasker(BaseEstimator, TransformerMixin, CacheMixin):
     =====
     With the default value for resampling_target, every 3D image processed by
     transform() will be resampled to the shape of labels_img. It may lead to a
-    very large memory consumption is the voxel number in labels_img is large.
+    very large memory consumption if the voxel number in labels_img is large.
 
     See also
     ========
@@ -346,7 +346,7 @@ class NiftiMapsMasker(BaseEstimator, TransformerMixin, CacheMixin):
     =====
     With the default value for resampling_target, every 3D image processed by
     transform() will be resampled to the shape of maps_img. It may lead to a
-    very large memory consumption is the voxel number in labels_img is large.
+    very large memory consumption if the voxel number in labels_img is large.
 
     See also
     ========
