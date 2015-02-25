@@ -235,7 +235,8 @@ def logistic_data_loss_and_spatial_grad_derivative(X, y, w, mask, grad_weight):
 
 def smooth_lasso_squared_loss(X, y, alpha, l1_ratio, mask, init=None,
                               max_iter=1000, tol=1e-4, callback=None,
-                              lipschitz_constant=None, verbose=0):
+                              lipschitz_constant=None, verbose=0,
+                              **solver_params):
     """Computes a solution for the Smooth Lasso regression problem, as in the
     SmoothLassoRegressor estimator, with no data preprocessing.
 
@@ -255,6 +256,10 @@ def smooth_lasso_squared_loss(X, y, alpha, l1_ratio, mask, init=None,
 
     """
 
+    w_prior = solver_params['w_prior']
+    alpha_ = solver_params['alpha_']
+    lambda_ = solver_params['lambda_']
+
     n_samples, n_features = X.shape
 
     # misc
@@ -271,11 +276,17 @@ def smooth_lasso_squared_loss(X, y, alpha, l1_ratio, mask, init=None,
 
     # mooth part of energy, and gradient of
     def f1(w):
-        return squared_loss_and_spatial_grad(X, y, w, mask, grad_weight)
+        loss_ = squared_loss_and_spatial_grad(X, y, w, mask, grad_weight)
+        diff_prior = w - lambda_ * w_prior
+        loss_ += .5 * alpha_ * np.sum(diff_prior**2)
+        return loss_
 
     def f1_grad(w):
-        return squared_loss_and_spatial_grad_derivative(X, y, w, mask,
-                                                        grad_weight)
+        grad_ = squared_loss_and_spatial_grad_derivative(X, y, w,
+                                                         mask, grad_weight) 
+        diff_prior = w - lambda_ * w_prior
+        grad_ += alpha_ * diff_prior
+        return grad_
 
     # prox of nonsmooth path of energy (account for the intercept)
     def f2(w):
@@ -409,7 +420,8 @@ def tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse"):
 
 def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
                 lipschitz_constant=None, init=None,
-                prox_max_iter=5000, tol=1e-4, callback=None, verbose=1):
+                prox_max_iter=5000, tol=1e-4, 
+                callback=None, verbose=1, **solver_params):
     """Minimizes empirical risk for TV-L1 penalized models.
 
     Can handle least squares (mean squared error --a.k.a mse) or logistic
@@ -475,6 +487,10 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
 
     """
 
+    w_prior = solver_params['w_prior']
+    alpha_ = solver_params['alpha_']
+    lambda_ = solver_params['lambda_']
+    
     # sanitize loss
     if loss not in ["mse", "logistic"]:
         raise ValueError("'%s' loss not implemented. Should be 'mse' or "
