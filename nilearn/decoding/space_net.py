@@ -239,7 +239,7 @@ class EarlyStoppingCallback(object):
             if np.mean(np.diff(self.test_scores[-5:][::-1])) >= self.tol:
                 if self.verbose:
                     if self.verbose > 1:
-                        print('Early stopping. Test score: %.8f %s' % (
+                        print('Early stoppwing. Test score: %.8f %s' % (
                               score, 40 * '-'))
                     else:
                         sys.stderr.write('.')
@@ -276,12 +276,16 @@ class EarlyStoppingCallback(object):
         """
         if self.is_classif:
             w = w[:-1]
-        if w.ptp() == 0:
+        if w.ptp() == 0.:
             # constant map, there is nothing
             return (-np.inf, -np.inf)
         y_pred = np.dot(self.X_test, w)
         spearman_score = stats.spearmanr(y_pred, self.y_test)[0]
         pearson_score = np.corrcoef(y_pred, self.y_test)[1, 0]
+        """
+        if np.isnan(spearman_score) or np.isnan(pearson_score):
+            assert(0)
+        """
         if self.is_classif:
             return spearman_score, pearson_score
         else:
@@ -348,6 +352,7 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
     # features in the mask's support, then we should use all of them to
     # learn the model i.e disable this screening)
     do_screening = (n_features > 100) and screening_percentile < 100.
+    do_screening = False
     if do_screening:
         X, mask, support = _univariate_feature_screening(
             X, y, mask, is_classif, screening_percentile)
@@ -604,7 +609,7 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
                  memory=Memory(None, verbose=0), copy_data=True,
                  standardize=True, verbose=0, n_jobs=1, eps=1e-3,
                  cv=8, fit_intercept=True, screening_percentile=20.,
-                 debias=False):
+                 debias=False, **kwargs):
         self.penalty = penalty
         self.is_classif = is_classif
         self.loss = loss
@@ -629,6 +634,10 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
         self.t_r = t_r
         self.target_affine = target_affine
         self.target_shape = target_shape
+        
+        self.w_prior = kwargs['w_prior']
+        self.alpha_ = kwargs['alpha_']
+        self.lambda_ = kwargs['lambda_']
 
         # sanity check on params
         self.check_params()
@@ -715,6 +724,7 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
         if self.verbose:
             tic = time.time()
 
+
         # compute / sanitize mask
         if isinstance(self.mask, NiftiMasker):
             self.masker_ = clone(self.mask)
@@ -728,11 +738,14 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
                                        high_pass=self.high_pass,
                                        mask_strategy='epi', t_r=self.t_r,
                                        memory=self.memory_)
+
         X = self.masker_.fit_transform(X)
         self.Xmean_ = X.mean(axis=0)
         self.Xstd_ = X.std(axis=0)
+
         self.mask_img_ = self.masker_.mask_img_
         self.mask_ = self.mask_img_.get_data().astype(np.bool)
+
         n_samples, _ = X.shape
 
         y = np.array(y).copy()
@@ -792,6 +805,8 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
         w = np.zeros((n_problems, X.shape[1] + 1))
         self.all_coef_ = np.ndarray((n_problems, n_folds, X.shape[1]))
 
+
+
         # correct screening_percentile according to the volume of the data mask
         mask_volume = _get_mask_volume(self.mask_img_)
         if mask_volume > MNI152_BRAIN_VOLUME:
@@ -808,9 +823,11 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
                 self.screening_percentile)
             print "Volume-corrected screening-percentile: %g" % (
                 self.screening_percentile_)
-
+        
         # main loop: loop on classes and folds
-        solver_params = dict(tol=self.tol, max_iter=self.max_iter)
+        solver_params = dict(tol=self.tol, max_iter=self.max_iter,
+                             w_prior=self.w_prior, alpha_=self.alpha_,
+                             lambda_=self.lambda_)
         self.best_model_params_ = []
         self.alpha_grids_ = []
         for (test_scores, best_w, best_alpha, best_l1_ratio, alphas,
@@ -822,8 +839,8 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
                 solver_params, n_alphas=self.n_alphas, eps=self.eps,
                 is_classif=self.loss == "logistic", key=(cls, fold),
                 debias=self.debias, verbose=self.verbose,
-                screening_percentile=self.screening_percentile_
-                ) for cls in xrange(n_problems) for fold in xrange(n_folds)):
+                screening_percentile=self.screening_percentile_)\
+                for cls in xrange(n_problems) for fold in xrange(n_folds)):
             self.best_model_params_.append((best_alpha, best_l1_ratio))
             self.alpha_grids_.append(alphas)
             self.ymean_[cls] += y_train_mean
@@ -907,6 +924,7 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
         y_pred : ndarray, shape (n_samples,)
             Predicted class label per sample.
         """
+        
         # cast X into usual 2D array
         X = self.masker_.transform(X)
 
@@ -1065,7 +1083,7 @@ class SpaceNetClassifier(BaseSpaceNet):
                  memory=Memory(None), copy_data=True, standardize=True,
                  verbose=0, n_jobs=1, eps=1e-3,
                  cv=8, fit_intercept=True, screening_percentile=20.,
-                 debias=False):
+                 debias=False, **kwargs):
         super(SpaceNetClassifier, self).__init__(
             penalty=penalty, is_classif=True, l1_ratios=l1_ratios,
             alphas=alphas, n_alphas=n_alphas, target_shape=target_shape,
@@ -1220,7 +1238,7 @@ class SpaceNetRegressor(BaseSpaceNet):
                  target_shape=None, low_pass=None, high_pass=None, t_r=None,
                  max_iter=1000, tol=1e-4, memory=Memory(None), copy_data=True,
                  standardize=True, verbose=0, n_jobs=1, eps=1e-3, cv=8,
-                 fit_intercept=True, screening_percentile=20., debias=False):
+                 fit_intercept=True, screening_percentile=20., debias=False, **kwargs):
         super(SpaceNetRegressor, self).__init__(
             penalty=penalty, is_classif=False, l1_ratios=l1_ratios,
             alphas=alphas, n_alphas=n_alphas, target_shape=target_shape,
@@ -1229,4 +1247,4 @@ class SpaceNetRegressor(BaseSpaceNet):
             n_jobs=n_jobs, eps=eps, cv=cv, debias=debias,
             fit_intercept=fit_intercept, standardize=standardize,
             screening_percentile=screening_percentile,
-            target_affine=target_affine, verbose=verbose)
+            target_affine=target_affine, verbose=verbose, **kwargs)
