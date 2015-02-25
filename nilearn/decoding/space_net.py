@@ -288,7 +288,8 @@ class EarlyStoppingCallback(object):
             return pearson_score, spearman_score
 
 
-def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
+def path_scores(solver, X, y, w_prior, alpha_, lambda_, mask, alphas,
+                l1_ratios, train, test,
                 solver_params, is_classif=False, n_alphas=10, eps=1E-3,
                 key=None, debias=False, Xmean=None,
                 screening_percentile=20., verbose=1):
@@ -303,6 +304,14 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
     y : 1D array of length n_samples
         Response vector; one value per sample.
 
+    w_prior : 1D array of length n_features
+              Prior weights.
+    alpha_ : scalar
+             Regularization parameter
+    
+    lambda_ : scalar
+              Scaling parameter
+    
     mask : 3D arrays of boolean
         Mask defining brain regions that we work on.
 
@@ -356,8 +365,15 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
     mask = _crop_mask(mask)
 
     # get train and test data
+    # XXX    
+    X_train, y_train = X[train], y[train]
+    X_test, y_test = X[test], y[test]
+    
+    """ Original
     X_train, y_train = X[train].copy(), y[train].copy()
     X_test, y_test = X[test].copy(), y[test].copy()
+    """
+
 
     # it is essential to center the data in regression
     X_train, y_train, _, y_train_mean, _ = center_data(
@@ -398,7 +414,8 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
                     X_test, y_test, is_classif=is_classif, debias=debias,
                     verbose=verbose)
                 w, _, init = solver(
-                    X_train, y_train, alpha, l1_ratio, mask=mask, init=init,
+                    X_train, y_train, w_prior, alpha_, lambda_, alpha,
+                    l1_ratio, mask=mask, init=init,
                     callback=early_stopper, verbose=max(verbose - 1, 0.),
                     **solver_params)
 
@@ -671,6 +688,12 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
                 ("'logistic' loss is only available for classification "
                  "problems."))
 
+
+    def set_prior(self, w_prior, alpha_, lambda_):
+        self.w_prior_ = w_prior
+        self.alpha_ = alpha_
+        self.lambda_ = lambda_
+
     def _set_coef_and_intercept(self, w):
         """Sets the loadings vector (coef) and the intercept of the fitted
         model."""
@@ -817,7 +840,8 @@ class BaseSpaceNet(LinearModel, RegressorMixin):
              y_train_mean, (cls, fold)) in Parallel(
             n_jobs=self.n_jobs, verbose=2 * self.verbose)(
             delayed(self.memory_.cache(path_scores))(
-                solver, X, y[:, cls] if n_problems > 1 else y, self.mask_,
+                solver, X, y[:, cls] if n_problems > 1 else y, self.w_prior_,
+                self.alpha_, self.lambda_, self.mask_,
                 alphas, l1_ratios, self.cv_[fold][0], self.cv_[fold][1],
                 solver_params, n_alphas=self.n_alphas, eps=self.eps,
                 is_classif=self.loss == "logistic", key=(cls, fold),
