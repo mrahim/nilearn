@@ -11,7 +11,6 @@ Regression with spatial priors like TV-L1 and Smooth LASSO.
 #         and others.
 # License: simplified BSD
 
-from scipy import sparse
 from math import sqrt
 import numpy as np
 from .objective_functions import (spectral_norm_squared,
@@ -305,9 +304,9 @@ def smooth_lasso_squared_loss(X, y, alpha, l1_ratio, mask, init=None,
         tol=tol, max_iter=max_iter, verbose=verbose, init=init)
 
 
-def smooth_lasso_logistic(X, y, w_prior, alpha_, lambda_, alpha, l1_ratio,
-                          mask, init=None, max_iter=1000, tol=1e-4,
-                          callback=None, verbose=0, lipschitz_constant=None):
+def smooth_lasso_logistic(X, y, alpha, l1_ratio, mask, init=None,
+                          max_iter=1000, tol=1e-4, callback=None, verbose=0,
+                          lipschitz_constant=None):
     """Computes a solution for the Smooth Lasso classification problem, with
     response vector in {-1, 1}^n_samples.
 
@@ -345,21 +344,11 @@ def smooth_lasso_logistic(X, y, w_prior, alpha_, lambda_, alpha, l1_ratio,
 
     # smooth part of energy, and gradient of
     def f1(w):
-        return \
-        logistic_data_loss_and_spatial_grad(X, y, w, mask, grad_weight) + \
-        alpha_ * \
-        logistic_data_loss_and_spatial_grad(sparse.eye(n_features),
-                                            sparse.csr_matrix(lambda_ * w_prior),
-                                            w, mask, grad_weight)
-    
+        return logistic_data_loss_and_spatial_grad(X, y, w, mask, grad_weight)
+
     def f1_grad(w):
-        return \
-        logistic_data_loss_and_spatial_grad_derivative(X, y, w, 
-                                                       mask, grad_weight) + \
-        alpha_ * \
-        logistic_data_loss_and_spatial_grad_derivative(sparse.eye(n_features),
-                                                       sparse.csr_matrix(lambda_ * w_prior),
-                                                       w, mask, grad_weight)
+        return logistic_data_loss_and_spatial_grad_derivative(X, y, w, mask,
+                                                              grad_weight)
 
     # prox of nonsmooth path of energy (account for the intercept)
     def f2(w):
