@@ -12,7 +12,7 @@ Common functions and base classes.
 
 from functools import partial
 import numpy as np
-from scipy import linalg
+from scipy import linalg, sparse
 
 
 def spectral_norm_squared(X):
@@ -49,6 +49,32 @@ def _logistic_loss_lipschitz_constant(X):
     # N.B: we handle intercept!
     X = np.hstack((X, np.ones((X.shape[0], 1))))
     return spectral_norm_squared(X)
+
+
+def _lamda_loss(L, X, y, w, compute_energy=True, compute_grad=False):
+    """Compute the error, and optionally, its gradient too.
+    """
+    if not (compute_energy or compute_grad):
+        raise RuntimeError(
+            "At least one of compute_energy or compute_grad must be True.")
+
+    r = np.dot(X, w) - y
+    residual = sparse.csc_matrix(r)
+    e = sparse.csc_matrix.dot(residual, L)
+
+    # compute energy
+    if compute_energy:
+        energy = .5 * sparse.csc_matrix.dot(e, residual.T)
+        if not compute_grad:
+            return energy
+
+    Xs = sparse.csc_matrix(X)
+    grad = sparse.csc_matrix.dot(e, Xs)
+
+    if not compute_energy:
+        return grad
+
+    return energy, grad
 
 
 def _squared_loss(X, y, w, compute_energy=True, compute_grad=False):
