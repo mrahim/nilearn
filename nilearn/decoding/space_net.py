@@ -32,7 +32,8 @@ from .._utils.cache_mixin import CacheMixin
 from ..input_data import NiftiMasker
 from .objective_functions import _unmask
 from .space_net_solvers import (tvl1_solver, _graph_net_logistic,
-                                _graph_net_squared_loss)
+                                _graph_net_squared_loss,
+                                _graph_net_lambda_loss)
 
 
 # Volume of a standard (MNI152) brain mask in mm^3
@@ -644,7 +645,7 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
         relative to the volume of standard brain.
     """
     SUPPORTED_PENALTIES = ["graph-net", "tv-l1"]
-    SUPPORTED_LOSSES = ["mse", "logistic"]
+    SUPPORTED_LOSSES = ["mse", "logistic", "lambda"]
 
     def __init__(self, penalty="graph-net", is_classif=False, loss=None,
                  l1_ratios=.5, alphas=None, n_alphas=10, mask=None,
@@ -797,7 +798,9 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
 
         # set backend solver
         if self.penalty.lower() == "graph-net":
-            if not self.is_classif or loss == "mse":
+            if loss == "lambda":
+                solver = _graph_net_lambda_loss
+            elif not self.is_classif or loss == "mse":
                 solver = _graph_net_squared_loss
             else:
                 solver = _graph_net_logistic

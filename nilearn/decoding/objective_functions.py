@@ -51,7 +51,7 @@ def _logistic_loss_lipschitz_constant(X):
     return spectral_norm_squared(X)
 
 
-def _lamda_loss(L, X, y, w, compute_energy=True, compute_grad=False):
+def _lambda_loss(L, X, y, w, compute_energy=True, compute_grad=False):
     """Compute the error, and optionally, its gradient too.
     """
     if not (compute_energy or compute_grad):
@@ -324,6 +324,11 @@ def _logistic_loss_grad(X, y, w):
 
 # gradient of squared loss function
 _squared_loss_grad = partial(_squared_loss, compute_energy=False,
+                             compute_grad=True)
+
+
+# gradient of lambda loss function
+_lambda_loss_grad = partial(_lambda_loss, compute_energy=False,
                              compute_grad=True)
 
 

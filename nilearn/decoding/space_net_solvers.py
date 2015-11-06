@@ -16,6 +16,7 @@ import numpy as np
 from .objective_functions import (spectral_norm_squared,
                                   _gradient_id,
                                   _logistic_loss_lipschitz_constant,
+                                  _lambda_loss, _lambda_loss_grad,
                                   _squared_loss, _squared_loss_grad, _unmask,
                                   _logistic_loss_grad,
                                   _logistic as _logistic_loss)
@@ -23,6 +24,23 @@ from .objective_functions import _gradient, _div
 from .proximal_operators import (_prox_l1, _prox_l1_with_intercept,
                                  _prox_tvl1, _prox_tvl1_with_intercept)
 from .fista import mfista
+
+
+def _lambda_loss_and_spatial_grad(L, X, y, w, mask, grad_weight):
+    """
+    Computes the lambda loss (data fidelity term) + squared l2 norm
+    of gradient (penalty term).
+    """
+    # data_section = np.dot(X, w) - y
+    data_section = _lambda_loss(L, X, y, w, compute_energy=True,
+                                compute_grad=False)
+
+    grad_buffer = np.zeros(mask.shape)
+    grad_buffer[mask] = w
+    grad_mask = np.tile(mask, [mask.ndim] + [1] * mask.ndim)
+    grad_section = _gradient(grad_buffer)[grad_mask]
+    return 0.5 * (data_section
+                  + grad_weight * np.dot(grad_section, grad_section))
 
 
 def _squared_loss_and_spatial_grad(X, y, w, mask, grad_weight):
@@ -56,6 +74,19 @@ def _squared_loss_and_spatial_grad(X, y, w, mask, grad_weight):
     grad_section = _gradient(grad_buffer)[grad_mask]
     return 0.5 * (np.dot(data_section, data_section)
                   + grad_weight * np.dot(grad_section, grad_section))
+
+
+def _lambda_loss_and_spatial_grad_derivative(L, X, y, w, mask, grad_weight):
+    """
+    Computes the derivative of _squared_loss_and_spatial_grad.
+    """
+    # data_section = np.dot(X, w) - y
+    data_section = _lambda_loss(L, X, y, w, compute_energy=True,
+                                compute_grad=False)
+    image_buffer = np.zeros(mask.shape)
+    image_buffer[mask] = w
+    return (np.dot(X.T, data_section)
+            - grad_weight * _div(_gradient(image_buffer))[mask])
 
 
 def _squared_loss_and_spatial_grad_derivative(X, y, w, mask, grad_weight):
@@ -235,6 +266,51 @@ def _logistic_data_loss_and_spatial_grad_derivative(X, y, w, mask,
     data_section[:-1] = data_section[:-1]\
         - grad_weight * _div(_gradient(image_buffer))[mask]
     return data_section
+
+
+def _graph_net_lambda_loss(L, X, y, alpha, l1_ratio, mask, init=None,
+                           max_iter=1000, tol=1e-4, callback=None,
+                           lipschitz_constant=None, verbose=0):
+    """Computes a solution for the Graph-net regression problem
+    """
+    _, n_features = X.shape
+
+    # misc
+    model_size = n_features
+    l1_weight = alpha * l1_ratio
+    grad_weight = alpha * (1. - l1_ratio)
+
+    if lipschitz_constant is None:
+        # XXX : a lambda loss lipschitz should be computed ?
+        lipschitz_constant = _squared_loss_derivative_lipschitz_constant(
+            X, mask, grad_weight)
+
+        # it's always a good idea to use somethx a bit bigger
+        lipschitz_constant *= 1.05
+
+    # smooth part of energy, and gradient thereof
+    def f1(w):
+        return _lambda_loss_and_spatial_grad(X, y, w, mask, grad_weight)
+
+    def f1_grad(w):
+        return _lambda_loss_and_spatial_grad_derivative(X, y, w, mask,
+                                                        grad_weight)
+
+    # prox of nonsmooth path of energy (account for the intercept)
+    def f2(w):
+        return np.sum(np.abs(w)) * l1_weight
+
+    def f2_prox(w, l, *args, **kwargs):
+        return _prox_l1(w, l * l1_weight), dict(converged=True)
+
+    # total energy (smooth + nonsmooth)
+    def total_energy(w):
+        return f1(w) + f2(w)
+
+    return mfista(
+        f1_grad, f2_prox, total_energy, lipschitz_constant,
+        model_size, dgap_factor=(.1 + l1_ratio) ** 2, callback=callback,
+        tol=tol, max_iter=max_iter, verbose=verbose, init=init)
 
 
 def _graph_net_squared_loss(X, y, alpha, l1_ratio, mask, init=None,
