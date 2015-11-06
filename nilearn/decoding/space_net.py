@@ -30,7 +30,7 @@ from .._utils.compat import _basestring
 from .._utils.fixes import atleast2d_or_csr
 from .._utils.cache_mixin import CacheMixin
 from ..input_data import NiftiMasker
-from .objective_functions import _unmask
+from .objective_functions import _unmask, _inv_lambda_matrix
 from .space_net_solvers import (tvl1_solver, _graph_net_logistic,
                                 _graph_net_squared_loss,
                                 _graph_net_lambda_loss)
@@ -334,7 +334,8 @@ class _EarlyStoppingCallback(object):
 def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
                 solver_params, is_classif=False, n_alphas=10, eps=1E-3,
                 key=None, debias=False, Xmean=None,
-                screening_percentile=20., verbose=1):
+                screening_percentile=20., verbose=1,
+                subjects=None, gamma=1.0):
     """Function to compute scores of different alphas in regression and
     classification used by CV objects
 
@@ -398,6 +399,13 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
     X_train, y_train = X[train].copy(), y[train].copy()
     X_test, y_test = X[test].copy(), y[test].copy()
 
+    if subjects is not None:
+        s_train = subjects[train].copy()
+        s_test = subjects[test].copy()
+        L_train = _inv_lambda_matrix(s_train, gamma)
+        print L_train
+        L_test = _inv_lambda_matrix(s_test, gamma)
+
     # it is essential to center the data in regression
     X_train, y_train, _, y_train_mean, _ = center_data(
         X_train, y_train, fit_intercept=True, normalize=False,
@@ -436,10 +444,16 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
                 early_stopper = _EarlyStoppingCallback(
                     X_test, y_test, is_classif=is_classif, debias=debias,
                     verbose=verbose)
-                w, _, init = solver(
-                    X_train, y_train, alpha, l1_ratio, mask=mask, init=init,
-                    callback=early_stopper, verbose=max(verbose - 1, 0.),
-                    **solver_params)
+                if subjects is not None:
+                    w, _, init = solver(L_train,
+                        X_train, y_train, alpha, l1_ratio, mask=mask, init=init,
+                        callback=early_stopper, verbose=max(verbose - 1, 0.),
+                        **solver_params)
+                else:
+                    w, _, init = solver(
+                        X_train, y_train, alpha, l1_ratio, mask=mask, init=init,
+                        callback=early_stopper, verbose=max(verbose - 1, 0.),
+                        **solver_params)
 
                 # We use 2 scores for model selection: the second one is to
                 # disambiguate between regions of equivalent Spearman
@@ -463,9 +477,14 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
         best_alpha = alphas_[0]
 
     # re-fit best model to high precision (i.e without early stopping, etc.)
-    best_w, _, init = solver(X_train, y_train, best_alpha, best_l1_ratio,
-                             mask=mask, init=best_init,
-                             verbose=max(verbose - 1, 0), **solver_params)
+    if subjects is not None:
+        best_w, _, init = solver(L_train, X_train, y_train, best_alpha, best_l1_ratio,
+                                 mask=mask, init=best_init,
+                                 verbose=max(verbose - 1, 0), **solver_params)
+    else:
+        best_w, _, init = solver(X_train, y_train, best_alpha, best_l1_ratio,
+                                 mask=mask, init=best_init,
+                                 verbose=max(verbose - 1, 0), **solver_params)
     if debias:
         best_w = _EarlyStoppingCallback(
             X_test, y_test, is_classif=is_classif, debias=debias,
@@ -733,7 +752,7 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
         else:
             self._set_intercept(self.Xmean_, self.ymean_, self.Xstd_)
 
-    def fit(self, X, y):
+    def fit(self, X, y, subjects=None, gamma=1.0):
         """Fit the learner
 
         Parameters
@@ -858,6 +877,7 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
                 is_classif=self.loss == "logistic", key=(cls, fold),
                 debias=self.debias, verbose=self.verbose,
                 screening_percentile=self.screening_percentile_,
+                subjects=subjects, gamma=gamma
                 ) for cls in range(n_problems) for fold in range(n_folds)):
             self.best_model_params_.append((best_alpha, best_l1_ratio))
             self.alpha_grids_.append(alphas)

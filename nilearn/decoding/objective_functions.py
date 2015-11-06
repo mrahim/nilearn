@@ -65,11 +65,13 @@ def _lambda_loss(L, X, y, w, compute_energy=True, compute_grad=False):
     # compute energy
     if compute_energy:
         energy = .5 * sparse.csc_matrix.dot(e, residual.T)
+        energy = energy[0, 0]
         if not compute_grad:
             return energy
 
     Xs = sparse.csc_matrix(X)
     grad = sparse.csc_matrix.dot(e, Xs)
+    grad = grad.todense()
 
     if not compute_energy:
         return grad
@@ -329,7 +331,7 @@ _squared_loss_grad = partial(_squared_loss, compute_energy=False,
 
 # gradient of lambda loss function
 _lambda_loss_grad = partial(_lambda_loss, compute_energy=False,
-                             compute_grad=True)
+                            compute_grad=True)
 
 
 def _gradient(w):
@@ -340,3 +342,17 @@ def _gradient(w):
 def _div(v):
     """Pure spatial divergence"""
     return _div_id(np.vstack((v, [np.zeros_like(v[0])])), l1_ratio=0.)
+
+
+def _inv_lambda_matrix(subjects, gamma=1.):
+    """Lambda matrix"""
+    # Compute n_per_sample
+    n_per_subject = [len(np.array(np.where(subjects == s)).ravel())
+                     for s in np.unique(subjects)]
+    # Build blocks
+    mats = [gamma*np.ones((n, n)) + np.identity(n) for n in n_per_subject]
+    # Build diagonal block matrix
+    L = sparse.block_diag(mats, format='csc')
+    # Invert L matrix
+    L1 = sparse.linalg.inv(L)
+    return L1

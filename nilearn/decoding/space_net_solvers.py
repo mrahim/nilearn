@@ -32,15 +32,16 @@ def _lambda_loss_and_spatial_grad(L, X, y, w, mask, grad_weight):
     of gradient (penalty term).
     """
     # data_section = np.dot(X, w) - y
-    data_section = _lambda_loss(L, X, y, w, compute_energy=True,
-                                compute_grad=False)
+    ds = _lambda_loss(L, X, y, w, compute_energy=True, compute_grad=False)
 
     grad_buffer = np.zeros(mask.shape)
     grad_buffer[mask] = w
     grad_mask = np.tile(mask, [mask.ndim] + [1] * mask.ndim)
     grad_section = _gradient(grad_buffer)[grad_mask]
-    return 0.5 * (data_section
-                  + grad_weight * np.dot(grad_section, grad_section))
+    g = ds + .5 * grad_weight * np.dot(grad_section, grad_section)
+    # return 0.5 * (np.dot(data_section, data_section)
+    #              + grad_weight * np.dot(grad_section, grad_section))
+    return g
 
 
 def _squared_loss_and_spatial_grad(X, y, w, mask, grad_weight):
@@ -80,13 +81,17 @@ def _lambda_loss_and_spatial_grad_derivative(L, X, y, w, mask, grad_weight):
     """
     Computes the derivative of _squared_loss_and_spatial_grad.
     """
-    # data_section = np.dot(X, w) - y
-    data_section = _lambda_loss(L, X, y, w, compute_energy=True,
-                                compute_grad=False)
+    data_section = np.dot(X, w) - y
+    ds = _lambda_loss(L, X, y, w, compute_energy=False, compute_grad=True)
+
     image_buffer = np.zeros(mask.shape)
     image_buffer[mask] = w
-    return (np.dot(X.T, data_section)
-            - grad_weight * _div(_gradient(image_buffer))[mask])
+
+    g = ds - grad_weight * _div(_gradient(image_buffer))[mask]
+    g = np.ravel(g.T)
+    # return (np.dot(X.T, data_section)
+    #        - grad_weight * _div(_gradient(image_buffer))[mask])
+    return g
 
 
 def _squared_loss_and_spatial_grad_derivative(X, y, w, mask, grad_weight):
@@ -290,10 +295,10 @@ def _graph_net_lambda_loss(L, X, y, alpha, l1_ratio, mask, init=None,
 
     # smooth part of energy, and gradient thereof
     def f1(w):
-        return _lambda_loss_and_spatial_grad(X, y, w, mask, grad_weight)
+        return _lambda_loss_and_spatial_grad(L, X, y, w, mask, grad_weight)
 
     def f1_grad(w):
-        return _lambda_loss_and_spatial_grad_derivative(X, y, w, mask,
+        return _lambda_loss_and_spatial_grad_derivative(L, X, y, w, mask,
                                                         grad_weight)
 
     # prox of nonsmooth path of energy (account for the intercept)
