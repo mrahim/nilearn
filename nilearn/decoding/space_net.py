@@ -403,7 +403,6 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
         s_train = subjects[train].copy()
         s_test = subjects[test].copy()
         L_train = _inv_lambda_matrix(s_train, gamma)
-        print L_train
         L_test = _inv_lambda_matrix(s_test, gamma)
 
     # it is essential to center the data in regression

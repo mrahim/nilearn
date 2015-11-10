@@ -344,6 +344,18 @@ def _div(v):
     return _div_id(np.vstack((v, [np.zeros_like(v[0])])), l1_ratio=0.)
 
 
+def _lambda_matrix(subjects, gamma=1.):
+    """Lambda matrix"""
+    # Compute n_per_sample
+    n_per_subject = [len(np.array(np.where(subjects == s)).ravel())
+                     for s in np.unique(subjects)]
+    # Build blocks
+    mats = [gamma*np.ones((n, n)) + np.identity(n) for n in n_per_subject]
+    # Build diagonal block matrix
+    L = sparse.block_diag(mats, format='csc')
+    return L
+
+
 def _inv_lambda_matrix(subjects, gamma=1.):
     """Lambda matrix"""
     # Compute n_per_sample
@@ -356,3 +368,13 @@ def _inv_lambda_matrix(subjects, gamma=1.):
     # Invert L matrix
     L1 = sparse.linalg.inv(L)
     return L1
+
+
+def _lambda_covariance(X, gamma=1.0):
+    """Returns the lambda covariance.
+    X should be (n_img, n_vox) and ordered in known/unknown imgs
+    output is (n_img, n_img)
+    """
+    s = np.array([1]*X.shape[0])
+    L = _inv_lambda_matrix(s, gamma=gamma).todense()
+    return L + np.cov(X)
