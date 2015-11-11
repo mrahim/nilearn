@@ -44,6 +44,7 @@ def set_subjects_splits(subjects, dx_group, pet):
     """
     X, y = _set_classification_data(pet, dx_group,
                                     ['AD', 'MCI'])
+    sss = StratifiedShuffleSplit(y)
     return X, y
 
 
@@ -72,7 +73,7 @@ spn = SpaceNetClassifier(penalty='graph-net',
                          verbose=2,
                          n_jobs=10)
 
-# spn.fit(X, y, s, gamma=5.)
+spn.fit(X, y, s, gamma=5.)
 
 # Test is on subject with multiple known and unknown images.
 # So first the covariance matrix is computed.
