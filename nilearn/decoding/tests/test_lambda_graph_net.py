@@ -107,7 +107,7 @@ def spn_predict(spn, xtest, ytest, nb_known=2):
                           spn.coef_, spn.masker_)
     ypred = np.ones(yp.shape)
     ypred[yp < 0] = -1
-    return[ypred, ytest_unknown]
+    return np.hstack((ypred, ytest_unknown.T))
 
 
 accuracy = []
