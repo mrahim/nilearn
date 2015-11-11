@@ -9,15 +9,11 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.cross_validation import StratifiedShuffleSplit
-from sklearn.preprocessing import binarize
 from nilearn.decoding import SpaceNetClassifier
 from nilearn.decoding.objective_functions import (_inv_lambda_matrix,
                                                   _lambda_matrix)
 from fetch_data import fetch_adni_longitudinal_fdg_pet
-from fetch_data._utils.utils import (_set_classification_data,
-                                     _set_group_indices,
-                                     StratifiedSubjectShuffleSplit)
-from nilearn.plotting import plot_stat_map
+from fetch_data._utils.utils import _set_classification_data
 
 
 dataset = fetch_adni_longitudinal_fdg_pet()
@@ -55,37 +51,12 @@ Xa, idx, sss = set_subjects_splits(subjects, dx_group, pet)
 dxa = dx_all[idx]
 subja = subj[idx]
 
-for train, test in sss:
-    Xtrain = np.hstack(Xa[train])
-    yt = np.hstack(dxa[train])
-    ytrain = - np.ones(yt.shape)
-    ytrain[yt == 'AD'] = 1
-    strain = np.hstack(subja[train])
-    break
-
-subjects = subjects[:20].copy()
-img_per_subject = img_per_subject[:20].copy()
-
-idx_u = [np.array(np.where(dataset.subjects == s)).ravel()[0]
-         for s in subjects]
-
-idx = [np.array(np.where(dataset.subjects == s)).ravel()
-       for s in subjects]
-idx = np.hstack(idx)
-
-X, y = _set_classification_data(dataset.pet[idx], dataset.dx_group[idx],
-                                ['AD', 'Normal'])
-
-s = [np.array(i*[b]) for b, i in zip(subjects, img_per_subject)]
-s = np.hstack(s)
-
 spn = SpaceNetClassifier(penalty='graph-net',
                          loss='lambda',
                          n_alphas=10,
                          verbose=2,
                          n_jobs=10)
 
-# spn.fit(X, y, s, gamma=5.)
 
 # Test is on subject with multiple known and unknown images.
 # So first the covariance matrix is computed.
@@ -110,7 +81,6 @@ def _predict_subject(Xu, Xk, yu, yk, w, masker):
     y: target for each image : [yu, yk]
     w: n_voxels
     """
-
     n_k = np.shape(Xk)[0]
     X_img = np.hstack((Xk, Xu))
     X = masker.transform(X_img)
@@ -127,55 +97,20 @@ def _predict_subject(Xu, Xk, yu, yk, w, masker):
     return ypred
 
 
-# Test on real data
-img_per_subject = df_count.values
-subjects = df_count.keys().values
-
-
-"""
-subjects = subjects[20:25].copy()
-img_per_subject = img_per_subject[20:25].copy()
-
-idx_u = [np.array(np.where(dataset.subjects == s)).ravel()[0]
-         for s in subjects]
-
-idx = [np.array(np.where(dataset.subjects == s)).ravel()
-       for s in subjects]
-idx = np.hstack(idx)
-
-X, y = _set_classification_data(dataset.pet[idx], dataset.dx_group[idx],
-                                ['AD', 'Normal'])
-
-s = [np.array(i*[b]) for b, i in zip(subjects, img_per_subject)]
-s = np.hstack(s)
-
-# last subject :
-nb_known = 2
-i = np.sum(img_per_subject[:-1])
-Xtest_known = X[i:i+nb_known]
-ytest_known = y[i:i+nb_known]
-Xtest_unknown = X[i+nb_known:]
-ytest_unknown = y[i+nb_known:]
-
-
-yp = _predict_subject(Xtest_unknown, Xtest_known,
-                      ytest_unknown, ytest_known,
-                      spn.coef_, spn.masker_)
-"""
-
-
 def spn_predict(spn, xtest, ytest, nb_known=2):
-    Xtest_known = X[:nb_known]
-    ytest_known = y[:nb_known]
-    Xtest_unknown = X[nb_known:]
-    ytest_unknown = y[nb_known:]
-
+    Xtest_known = xtest[:nb_known]
+    ytest_known = ytest[:nb_known]
+    Xtest_unknown = xtest[nb_known:]
+    ytest_unknown = ytest[nb_known:]
     yp = _predict_subject(Xtest_unknown, Xtest_known,
                           ytest_unknown, ytest_known,
                           spn.coef_, spn.masker_)
-    return yp
+    ypred = np.ones(yp.shape)
+    ypred[yp < 0] = -1
+    return[ypred, ytest_unknown]
 
 
+accuracy = []
 for train, test in sss:
     Xtrain = np.hstack(Xa[train])
     yt = np.hstack(dxa[train])
@@ -190,8 +125,5 @@ for train, test in sss:
         ytest = - np.ones(yt.shape)
         ytest[yt == 'AD'] = 1
         yp = spn_predict(spn, Xtest, ytest, nb_known=2)
-        print(ytest)        
-        print(yp)
-        break
-
+        accuracy.append(yp)
     break
