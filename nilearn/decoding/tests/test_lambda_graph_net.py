@@ -33,8 +33,10 @@ df_count = df_count[df_count < 6]
 img_per_subject = df_count.values
 # unique subjects with multiple images
 subjects = df_count.keys().values
+subj = np.array([dataset.subjects[grouped[s]] for s in subjects])
 # diagnosis of the subjects
 dx_group = np.hstack([dataset.dx_group[grouped[s][0]] for s in subjects])
+dx_all = np.array([dataset.dx_group[grouped[s]] for s in subjects])
 # all images of the subjects
 pet = np.array([dataset.pet[grouped[s]] for s in subjects])
 
@@ -42,14 +44,24 @@ pet = np.array([dataset.pet[grouped[s]] for s in subjects])
 def set_subjects_splits(subjects, dx_group, pet):
     """Returns X, y
     """
-    X, y = _set_classification_data(pet, dx_group,
-                                    ['AD', 'MCI'])
-    sss = StratifiedShuffleSplit(y)
-    return X, y
+    X, y, idx = _set_classification_data(pet, dx_group, ['AD', 'MCI'],
+                                         return_idx=True)
+    sss = StratifiedShuffleSplit(y, n_iter=100, test_size=.25,
+                                 random_state=42)
+    return X, idx, sss
 
 
-Xa, ya = set_subjects_splits(subjects, dx_group, pet)
+Xa, idx, sss = set_subjects_splits(subjects, dx_group, pet)
+dxa = dx_all[idx]
+subja = subj[idx]
 
+for train, test in sss:
+    Xtrain = np.hstack(Xa[train])
+    yt = np.hstack(dxa[train])
+    ytrain = - np.ones(yt.shape)
+    ytrain[yt == 'AD'] = 1
+    strain = np.hstack(subja[train])
+    break
 
 subjects = subjects[:20].copy()
 img_per_subject = img_per_subject[:20].copy()
@@ -73,7 +85,7 @@ spn = SpaceNetClassifier(penalty='graph-net',
                          verbose=2,
                          n_jobs=10)
 
-spn.fit(X, y, s, gamma=5.)
+# spn.fit(X, y, s, gamma=5.)
 
 # Test is on subject with multiple known and unknown images.
 # So first the covariance matrix is computed.
@@ -150,3 +162,36 @@ yp = _predict_subject(Xtest_unknown, Xtest_known,
                       ytest_unknown, ytest_known,
                       spn.coef_, spn.masker_)
 """
+
+
+def spn_predict(spn, xtest, ytest, nb_known=2):
+    Xtest_known = X[:nb_known]
+    ytest_known = y[:nb_known]
+    Xtest_unknown = X[nb_known:]
+    ytest_unknown = y[nb_known:]
+
+    yp = _predict_subject(Xtest_unknown, Xtest_known,
+                          ytest_unknown, ytest_known,
+                          spn.coef_, spn.masker_)
+    return yp
+
+
+for train, test in sss:
+    Xtrain = np.hstack(Xa[train])
+    yt = np.hstack(dxa[train])
+    ytrain = - np.ones(yt.shape)
+    ytrain[yt == 'AD'] = 1
+    strain = np.hstack(subja[train])
+    spn.fit(Xtrain, ytrain, strain, gamma=5.)
+
+    for t in test:
+        Xtest = np.hstack(Xa[t])
+        yt = np.hstack(dxa[t])
+        ytest = - np.ones(yt.shape)
+        ytest[yt == 'AD'] = 1
+        yp = spn_predict(spn, Xtest, ytest, nb_known=2)
+        print(ytest)        
+        print(yp)
+        break
+
+    break
