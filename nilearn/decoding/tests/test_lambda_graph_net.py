@@ -107,10 +107,10 @@ def spn_predict(spn, xtest, ytest, nb_known=2):
                           spn.coef_, spn.masker_)
     ypred = np.ones(yp.shape)
     ypred[yp < 0] = -1
-    return np.hstack((ypred, ytest_unknown.T))
+    return np.hstack((np.expand_dims(ytest_unknown, axis=1), ypred))
 
-
-accuracy = []
+accuracy1 = []
+accuracy2 = []
 for train, test in sss:
     Xtrain = np.hstack(Xa[train])
     yt = np.hstack(dxa[train])
@@ -119,11 +119,22 @@ for train, test in sss:
     strain = np.hstack(subja[train])
     spn.fit(Xtrain, ytrain, strain, gamma=5.)
 
+    acc1 = []
+    acc2 = []
     for t in test:
         Xtest = np.hstack(Xa[t])
         yt = np.hstack(dxa[t])
         ytest = - np.ones(yt.shape)
         ytest[yt == 'AD'] = 1
+        yp = spn_predict(spn, Xtest, ytest, nb_known=1)
+        acc1.append(yp)
         yp = spn_predict(spn, Xtest, ytest, nb_known=2)
-        accuracy.append(yp)
-    break
+        acc2.append(yp)
+    pred = np.vstack(acc1)
+    accuracy1.append(accuracy_score(pred[:, 0], pred[:, 1]))
+    pred = np.vstack(acc2)
+    accuracy2.append(accuracy_score(pred[:, 0], pred[:, 1]))
+
+np.savez('graphnet_scores',
+         accuracy1=accuracy1,
+         accuracy2=accuracy2)
