@@ -54,8 +54,8 @@ subja = subj[idx]
 spn = SpaceNetClassifier(penalty='graph-net',
                          loss='lambda',
                          n_alphas=10,
-                         verbose=2,
-                         n_jobs=10)
+                         verbose=0,
+                         n_jobs=1)
 
 
 # Test is on subject with multiple known and unknown images.
@@ -109,8 +109,51 @@ def spn_predict(spn, xtest, ytest, nb_known=2):
     ypred[yp < 0] = -1
     return np.hstack((np.expand_dims(ytest_unknown, axis=1), ypred))
 
+accuracy0 = []
 accuracy1 = []
 accuracy2 = []
+
+
+def train_and_score(spn, Xa, dxa, subja, train, test):
+    Xtrain = np.hstack(Xa[train])
+    yt = np.hstack(dxa[train])
+    ytrain = - np.ones(yt.shape)
+    ytrain[yt == 'AD'] = 1
+    strain = np.hstack(subja[train])
+    spn.fit(Xtrain, ytrain, strain, gamma=5.)
+
+    acc1 = []
+    acc2 = []
+    for t in test:
+        Xtest = np.hstack(Xa[t])
+        yt = np.hstack(dxa[t])
+        ytest = - np.ones(yt.shape)
+        ytest[yt == 'AD'] = 1
+        yp = spn_predict(spn, Xtest, ytest, nb_known=1)
+        acc1.append(yp)
+        yp = spn_predict(spn, Xtest, ytest, nb_known=2)
+        acc2.append(yp)
+
+    Xtest = np.hstack(Xa[test])
+    yt = np.hstack(dxa[test])
+    ytest = - np.ones(yt.shape)
+    ytest[yt == 'AD'] = 1
+    a0 = accuracy_score(ytest, spn.predict(Xtest))
+
+    pred = np.vstack(acc1)
+    a1 = accuracy_score(pred[:, 0], pred[:, 1])
+    pred = np.vstack(acc2)
+    a2 = accuracy_score(pred[:, 0], pred[:, 1])
+    return [a0, a1, a2]
+
+
+from joblib import Parallel, delayed
+
+scores = Parallel(n_jobs=20, verbose=5)(
+         delayed(train_and_score)(spn, Xa, dxa, subja, train, test)
+         for train, test in sss)
+
+"""
 for train, test in sss:
     Xtrain = np.hstack(Xa[train])
     yt = np.hstack(dxa[train])
@@ -138,3 +181,4 @@ for train, test in sss:
 np.savez('graphnet_scores',
          accuracy1=accuracy1,
          accuracy2=accuracy2)
+"""
