@@ -42,7 +42,7 @@ def set_subjects_splits(subjects, dx_group, pet):
     """
     X, y, idx = _set_classification_data(pet, dx_group, ['AD', 'MCI'],
                                          return_idx=True)
-    sss = StratifiedShuffleSplit(y, n_iter=100, test_size=.25,
+    sss = StratifiedShuffleSplit(y, n_iter=10, test_size=.25,
                                  random_state=42)
     return X, idx, sss
 
@@ -54,7 +54,7 @@ subja = subj[idx]
 spn = SpaceNetClassifier(penalty='graph-net',
                          loss='lambda',
                          n_alphas=10,
-                         verbose=0,
+                         verbose=1,
                          n_jobs=1)
 
 
@@ -122,6 +122,13 @@ def train_and_score(spn, Xa, dxa, subja, train, test):
     strain = np.hstack(subja[train])
     spn.fit(Xtrain, ytrain, strain, gamma=5.)
 
+    spn_pure = SpaceNetClassifier(penalty='graph-net',
+                                  loss='logistic',
+                                  n_alphas=10,
+                                  verbose=1,
+                                  n_jobs=1)
+    spn_pure.fit(Xtrain, ytrain)
+
     acc1 = []
     acc2 = []
     for t in test:
@@ -140,16 +147,18 @@ def train_and_score(spn, Xa, dxa, subja, train, test):
     ytest[yt == 'AD'] = 1
     a0 = accuracy_score(ytest, spn.predict(Xtest))
 
+    a3 = accuracy_score(ytest, spn_pure.predict(Xtest))
+
     pred = np.vstack(acc1)
     a1 = accuracy_score(pred[:, 0], pred[:, 1])
     pred = np.vstack(acc2)
     a2 = accuracy_score(pred[:, 0], pred[:, 1])
-    return [a0, a1, a2]
+    return [a3, a0, a1, a2]
 
 
 from joblib import Parallel, delayed
 
-scores = Parallel(n_jobs=20, verbose=5)(
+scores = Parallel(n_jobs=10, verbose=5)(
          delayed(train_and_score)(spn, Xa, dxa, subja, train, test)
          for train, test in sss)
 
