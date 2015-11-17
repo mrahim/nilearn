@@ -12,9 +12,15 @@ from sklearn.cross_validation import StratifiedShuffleSplit
 from nilearn.decoding import SpaceNetClassifier
 from nilearn.decoding.objective_functions import (_inv_lambda_matrix,
                                                   _lambda_matrix)
-from fetch_data import fetch_adni_longitudinal_fdg_pet
+from fetch_data import fetch_adni_longitudinal_fdg_pet, fetch_adni_masks
 from fetch_data._utils.utils import _set_classification_data
+from sklearn.linear_model import LogisticRegressionCV 
+from nilearn.input_data import NiftiMasker
 
+
+mask = fetch_adni_masks()['mask_pet_longitudinal']
+masker = NiftiMasker(mask_img=mask)
+masker.fit()
 
 dataset = fetch_adni_longitudinal_fdg_pet()
 
@@ -57,6 +63,8 @@ spn = SpaceNetClassifier(penalty='graph-net',
                          verbose=1,
                          n_jobs=1)
 
+lr = LogisticRegressionCV()
+
 
 # Test is on subject with multiple known and unknown images.
 # So first the covariance matrix is computed.
@@ -87,7 +95,7 @@ def _predict_subject(Xu, Xk, yu, yk, w, masker):
     X_k = X[:n_k, :]
     X_u = X[n_k:, :]
 
-    covariance = _compute_lambda_covariance(X, gamma=5.)
+    covariance = _compute_lambda_covariance(X, gamma=10.0)
     ck = np.linalg.inv(covariance[:n_k, :n_k])
     cku = covariance[n_k:, :n_k]
 
@@ -114,13 +122,33 @@ accuracy1 = []
 accuracy2 = []
 
 
+def train_and_score_lr(lr, Xa, dxa, subja, train, test):
+    Xtrain = np.hstack(Xa[train])
+    yt = np.hstack(dxa[train])
+    ytrain = - np.ones(yt.shape)
+    ytrain[yt == 'AD'] = 1
+
+    xtr = masker.transform(Xtrain)
+
+    lr.fit(xtr, ytrain)
+
+    Xtest = np.hstack(Xa[test])
+    yt = np.hstack(dxa[test])
+    ytest = - np.ones(yt.shape)
+    ytest[yt == 'AD'] = 1
+
+    xte = masker.transform(Xtest)
+
+    return accuracy_score(ytest, lr.predict(xte))
+
+
 def train_and_score(spn, Xa, dxa, subja, train, test):
     Xtrain = np.hstack(Xa[train])
     yt = np.hstack(dxa[train])
     ytrain = - np.ones(yt.shape)
     ytrain[yt == 'AD'] = 1
     strain = np.hstack(subja[train])
-    spn.fit(Xtrain, ytrain, strain, gamma=5.)
+    spn.fit(Xtrain, ytrain, strain, gamma=10.0)
 
     spn_pure = SpaceNetClassifier(penalty='graph-net',
                                   loss='logistic',
@@ -158,9 +186,15 @@ def train_and_score(spn, Xa, dxa, subja, train, test):
 
 from joblib import Parallel, delayed
 
+# scores = Parallel(n_jobs=10, verbose=5)(
+#         delayed(train_and_score_lr)(lr, Xa, dxa, subja, train, test)
+#         for train, test in sss)
+
+
 scores = Parallel(n_jobs=10, verbose=5)(
          delayed(train_and_score)(spn, Xa, dxa, subja, train, test)
          for train, test in sss)
+
 
 """
 for train, test in sss:
