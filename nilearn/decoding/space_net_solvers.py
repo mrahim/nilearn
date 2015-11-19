@@ -593,7 +593,7 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, L=None, max_iter=100,
 
     # function to compute total energy (i.e smooth (f1) + nonsmooth (f2) parts)
     def total_energy(w):
-        return _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss=loss, L)
+        return _tvl1_objective(X, y, w, alpha, l1_ratio, mask, L, loss=loss)
 
     # Lipschitz constant of f1_grad
     if lipschitz_constant is None:
