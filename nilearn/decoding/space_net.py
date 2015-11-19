@@ -444,8 +444,9 @@ def path_scores(solver, X, y, mask, alphas, l1_ratios, train, test,
                     X_test, y_test, is_classif=is_classif, debias=debias,
                     verbose=verbose)
                 if subjects is not None:
-                    w, _, init = solver(L_train,
-                        X_train, y_train, alpha, l1_ratio, mask=mask, init=init,
+                    w, _, init = solver(
+                        X_train, y_train, alpha, l1_ratio, mask=mask,
+                        init=init, L=L_train,
                         callback=early_stopper, verbose=max(verbose - 1, 0.),
                         **solver_params)
                 else:

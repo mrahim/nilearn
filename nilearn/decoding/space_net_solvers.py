@@ -490,8 +490,8 @@ def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse", L=None):
     return out
 
 
-def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
-                lipschitz_constant=None, init=None, L=None,
+def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, L=None, max_iter=100,
+                lipschitz_constant=None, init=None,
                 prox_max_iter=5000, tol=1e-4, callback=None, verbose=1):
     """Minimizes empirical risk for TV-L1 penalized models.
 
