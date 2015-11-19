@@ -461,7 +461,7 @@ def _tvl1_objective_from_gradient(gradient):
     return l1_term + tv_term
 
 
-def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse", L=None):
+def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, L=None, loss="mse"):
     """The TV-L1 squared loss regression objective functions.
 
     Returns
