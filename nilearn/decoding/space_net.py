@@ -823,6 +823,8 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
             else:
                 solver = _graph_net_logistic
         else:
+            if loss == "lambda":
+                solver = partial(tvl1_solver, loss="lambda")
             if not self.is_classif or loss == "mse":
                 solver = partial(tvl1_solver, loss="mse")
             else:

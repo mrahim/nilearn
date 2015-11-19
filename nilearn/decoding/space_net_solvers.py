@@ -461,7 +461,7 @@ def _tvl1_objective_from_gradient(gradient):
     return l1_term + tv_term
 
 
-def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse"):
+def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse", L=None):
     """The TV-L1 squared loss regression objective functions.
 
     Returns
@@ -471,12 +471,15 @@ def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse"):
     """
 
     loss = loss.lower()
-    if loss not in ['mse', 'logistic']:
+    if loss not in ['mse', 'logistic', 'lambda']:
         raise ValueError(
-            "loss must be one of 'mse' or 'logistic'; got '%s'" % loss)
+            "loss must be one of 'mse', 'lambda' or 'logistic';"
+            "got '%s'" % loss)
 
     if loss == "mse":
         out = _squared_loss(X, y, w)
+    elif loss == "lambda":
+        out = _lambda_loss(L, X, y, w)
     else:
         out = _logistic_loss(X, y, w)
         w = w[:-1]
@@ -488,7 +491,7 @@ def _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss="mse"):
 
 
 def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
-                lipschitz_constant=None, init=None,
+                lipschitz_constant=None, init=None, L=None,
                 prox_max_iter=5000, tol=1e-4, callback=None, verbose=1):
     """Minimizes empirical risk for TV-L1 penalized models.
 
@@ -556,7 +559,7 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
     """
 
     # sanitize loss
-    if loss not in ["mse", "logistic"]:
+    if loss not in ["mse", "logistic", "lambda"]:
         raise ValueError("'%s' loss not implemented. Should be 'mse' or "
                          "'logistic" % loss)
 
@@ -568,13 +571,13 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
     w_size = X.shape[1] + int(loss == "logistic")
 
     def unmaskvec(w):
-        if loss == "mse":
+        if loss in ["mse", "lambda"]:
             return _unmask(w, mask)
         else:
             return np.append(_unmask(w[:-1], mask), w[-1])
 
     def maskvec(w):
-        if loss == "mse":
+        if loss == ["mse", "lambda"]:
             return w[flat_mask]
         else:
             return np.append(w[:-1][flat_mask], w[-1])
@@ -583,16 +586,20 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, max_iter=100,
     def f1_grad(w):
         if loss == "logistic":
             return _logistic_loss_grad(X, y, w)
+        elif loss == "lambda":
+            return _lambda_loss_grad(L, X, y, w)
         else:
             return _squared_loss_grad(X, y, w)
 
     # function to compute total energy (i.e smooth (f1) + nonsmooth (f2) parts)
     def total_energy(w):
-        return _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss=loss)
+        return _tvl1_objective(X, y, w, alpha, l1_ratio, mask, loss=loss, L)
 
     # Lipschitz constant of f1_grad
     if lipschitz_constant is None:
         if loss == "mse":
+            lipschitz_constant = 1.05 * spectral_norm_squared(X)
+        elif loss == "lambda":
             lipschitz_constant = 1.05 * spectral_norm_squared(X)
         else:
             lipschitz_constant = 1.1 * _logistic_loss_lipschitz_constant(X)
