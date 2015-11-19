@@ -577,7 +577,7 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, L=None, max_iter=100,
             return np.append(_unmask(w[:-1], mask), w[-1])
 
     def maskvec(w):
-        if loss == ["mse", "lambda"]:
+        if loss in ["mse", "lambda"]:
             return w[flat_mask]
         else:
             return np.append(w[:-1][flat_mask], w[-1])
@@ -605,7 +605,7 @@ def tvl1_solver(X, y, alpha, l1_ratio, mask, loss=None, L=None, max_iter=100,
             lipschitz_constant = 1.1 * _logistic_loss_lipschitz_constant(X)
 
     # proximal operator of nonsmooth proximable part of energy (f2)
-    if loss == "mse":
+    if loss in ["mse", "lambda"]:
         def f2_prox(w, stepsize, dgap_tol, init=None):
             out, info = _prox_tvl1(
                 unmaskvec(w), weight=alpha * stepsize, l1_ratio=l1_ratio,
