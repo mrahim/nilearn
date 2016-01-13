@@ -60,6 +60,16 @@ class NiftiLabelsMasker(BaseMasker, CacheMixin):
     standardize: boolean, optional
         If standardize is True, the time-series are centered and normed:
         their mean is put to 0 and their variance to 1 in the time dimension.
+        The ``standardize`` parameter is deprecated and will be removed, use
+        ``normalize="std"`` to standardize.
+
+    normalize: {"psc", "std", None}, optional
+        The time-series normalization method.
+        If 'psc' (percent signal change), input time-series means in the time
+        dimension are put to 100 prior to any temporal preprocessing.
+        If 'std', the output time-series are centered and normed:
+        their mean is put to 0 and their variance to 1 in the time dimension.
+        If None, no normalization is done.
 
     detrend: boolean, optional
         This parameter is passed to signal.clean. Please see the related
@@ -104,7 +114,8 @@ class NiftiLabelsMasker(BaseMasker, CacheMixin):
     # memory and memory_level are used by CacheMixin.
 
     def __init__(self, labels_img, background_label=0, mask_img=None,
-                 smoothing_fwhm=None, standardize=False, detrend=False,
+                 smoothing_fwhm=None, standardize=False, normalize=None, 
+                 detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  resampling_target="data",
                  memory=Memory(cachedir=None, verbose=0), memory_level=1,
@@ -118,6 +129,7 @@ class NiftiLabelsMasker(BaseMasker, CacheMixin):
 
         # Parameters for clean()
         self.standardize = standardize
+        self.normalize = normalize
         self.detrend = detrend
         self.low_pass = low_pass
         self.high_pass = high_pass

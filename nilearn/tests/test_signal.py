@@ -150,7 +150,7 @@ def test_butterworth():
     np.testing.assert_almost_equal(out1, out2)
 
 
-def test_standardize():
+def test_normalize():
     rand_gen = np.random.RandomState(0)
     n_features = 10
     n_samples = 17
@@ -159,22 +159,27 @@ def test_standardize():
     a = rand_gen.random_sample((n_samples, n_features))
     a += np.linspace(0, 2., n_features)
 
-    # transpose array to fit _standardize input.
+    # transpose array to fit _normalize input.
     # Without trend removal
-    b = nisignal._standardize(a, normalize=True)
+    b = nisignal._normalize(a, normalize='std')
     energies = (b ** 2).sum(axis=0)
     np.testing.assert_almost_equal(energies, np.ones(n_features))
     np.testing.assert_almost_equal(b.sum(axis=0), np.zeros(n_features))
 
+    b = nisignal._normalize(a, normalize='psc')
+    means = b.mean(axis=0)
+    np.testing.assert_almost_equal(means, 100. * np.ones(n_features))
+
     # With trend removal
     a = np.atleast_2d(np.linspace(0, 2., n_features)).T
-    b = nisignal._standardize(a, detrend=True, normalize=False)
+    b = nisignal._normalize(a, detrend=True, normalize=None)
     np.testing.assert_almost_equal(b, np.zeros(b.shape))
 
-    length_1_signal = np.atleast_2d(np.linspace(0, 2., n_features))
-    np.testing.assert_array_equal(length_1_signal,
-                                  nisignal._standardize(length_1_signal,
-                                                        normalize=True))
+    for normalize in ('std', 'psc'):
+        length_1_signal = np.atleast_2d(np.linspace(0, 2., n_features))
+        np.testing.assert_array_equal(length_1_signal,
+                                      nisignal._normalize(length_1_signal,
+                                                          normalize=normalize))
 
 
 def test_detrend():
@@ -289,15 +294,18 @@ def test_clean_confounds():
     np.testing.assert_almost_equal(noises, noises1, decimal=12)
 
     # With signal: output must be orthogonal to confounds
-    cleaned_signals = nisignal.clean(signals + noises, confounds=confounds,
-                                     detrend=False, standardize=True)
-    assert_true(abs(np.dot(confounds.T, cleaned_signals)).max() < 1000. * eps)
+    for normalize in ('std', 'psc'):
+        cleaned_signals = nisignal.clean(signals + noises, confounds=confounds,
+                                         detrend=False, normalize=normalize)
+        assert_true(
+            abs(np.dot(confounds.T, cleaned_signals)).max() < 1000. * eps)
 
-    # Same output when a constant confound is added
-    confounds1 = np.hstack((np.ones((45, 1)), confounds))
-    cleaned_signals1 = nisignal.clean(signals + noises, confounds=confounds1,
-                                      detrend=False, standardize=True)
-    np.testing.assert_almost_equal(cleaned_signals1, cleaned_signals)
+        # Same output when a constant confound is added
+        confounds1 = np.hstack((np.ones((45, 1)), confounds))
+        cleaned_signals1 = nisignal.clean(signals + noises,
+                                          confounds=confounds1,
+                                          detrend=False, normalize=normalize)
+        np.testing.assert_almost_equal(cleaned_signals1, cleaned_signals)
 
     # Test detrending. No trend should exist in the output.
     # Use confounds with a trend.
@@ -323,9 +331,17 @@ def test_clean_confounds():
     np.testing.assert_almost_equal(cleaned_signals, input_signals)
 
     cleaned_signals = nisignal.clean(input_signals, detrend=False,
-                                     standardize=True)
+                                     normalize='std')
     np.testing.assert_almost_equal(cleaned_signals.var(axis=0),
                                    np.ones(cleaned_signals.shape[1]))
+
+    input_signals = signals + np.arange(signals.shape[-1])
+    cleaned_signals = nisignal.clean(input_signals, detrend=False,
+                                     normalize='psc')
+    means = 100. * np.ones(cleaned_signals.shape[1])
+    means[0] = 0.
+    np.testing.assert_almost_equal(cleaned_signals.mean(axis=0),
+                                   means)
 
     # Test with confounds read from a file. Smoke test only (result has
     # no meaning).

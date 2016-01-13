@@ -13,7 +13,7 @@ import warnings
 import numpy as np
 import scipy
 from scipy import signal, stats, linalg
-from sklearn.utils import gen_even_slices, as_float_array
+from sklearn.utils import gen_even_slices, as_float_array, deprecated
 from distutils.version import LooseVersion
 
 from ._utils.compat import _basestring
@@ -23,7 +23,7 @@ from ._utils import check_niimg_4d
 NP_VERSION = distutils.version.LooseVersion(np.version.short_version).version
 
 
-def _standardize(signals, detrend=False, normalize=True):
+def _normalize(signals, detrend=False, normalize=None):
     """ Center and norm a given signal (time is along first axis)
 
     Parameters
@@ -34,8 +34,9 @@ def _standardize(signals, detrend=False, normalize=True):
     detrend: bool
         if detrending of timeseries is requested
 
-    normalize: bool
-        if True, shift timeseries to zero mean value and scale
+    normalize: {'psc', 'std', None}
+        If 'psc', set timeseries mean value to 100 prior to possible detrend.
+        If 'std', shift timeseries to zero mean value and scale
         to unit energy (sum of squares).
 
     Returns
@@ -43,18 +44,23 @@ def _standardize(signals, detrend=False, normalize=True):
     std_signals: numpy.ndarray
         copy of signals, normalized.
     """
+    if normalize is not None:
+	if signals.shape[0] == 1:
+	    warnings.warn('Normalization of 3D signal has been requested but '
+	        'would lead to zero values. Skipping.')
+	    return signals
+
+    signals = signals.copy()
+    if normalize == 'psc':
+        mean = signals.mean(axis=0) / 100.
+        # no rescaling if almost centered data
+        mean[mean < 1e6 * np.finfo(np.float).eps] = 1.
+        signals /= mean
 
     if detrend:
-        signals = _detrend(signals, inplace=False)
-    else:
-        signals = signals.copy()
+        signals = _detrend(signals, inplace=True)
 
-    if normalize:
-        if signals.shape[0] == 1:
-            warnings.warn('Standardization of 3D signal has been requested but '
-                'would lead to zero values. Skipping.')
-            return signals
-
+    if normalize == 'std':
         if not detrend:
             # remove mean if not already detrended
             signals = signals - signals.mean(axis=0)
@@ -63,6 +69,16 @@ def _standardize(signals, detrend=False, normalize=True):
         std[std < np.finfo(np.float).eps] = 1.  # avoid numerical problems
         signals /= std
     return signals
+
+
+@deprecated('it has been replaced by _normalize and will be removed')
+def _standardize(signals, detrend=False, normalize=True):
+    if normalize:
+        normalize = 'std'
+    else:
+        normalize = None
+
+    return _normalize(signals, detrend=detrend, normalize=normalize)
 
 
 def _mean_of_squares(signals, n_batches=20):
@@ -347,7 +363,8 @@ def _ensure_float(data):
 
 
 def clean(signals, sessions=None, detrend=True, standardize=True,
-          confounds=None, low_pass=None, high_pass=None, t_r=2.5):
+          normalize='std', confounds=None, low_pass=None, high_pass=None,
+          t_r=2.5):
     """Improve SNR on masked fMRI signals.
 
     This function can do several things on the input signals, in
@@ -397,6 +414,16 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
 
     standardize: bool
         If True, returned signals are set to unit variance.
+	The ``standardize`` parameter is deprecated and will be removed, use
+   	``normalize="std"`` to standardize.
+
+       normalize: {'psc', 'std', None}, optional
+           Signals normalization method.
+           If 'psc' (percent signal change), input signals temporal means are
+           set to 100 prior to any preprocessing.
+           If 'std', output signals are set to unit variance.
+           If None, no normalization is done.
+
 
     Returns
     -------
@@ -428,6 +455,10 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
                       (list, tuple, _basestring, np.ndarray, type(None))):
         raise TypeError("confounds keyword has an unhandled type: %s"
                         % confounds.__class__)
+
+    if normalize not in ("psc", "std", None):
+        raise ValueError("invalid value for 'normalize'"
+                         " parameter: {0}".format(normalize))
 
     # Read confounds
     if confounds is not None:
@@ -477,13 +508,19 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
                 session_confounds = confounds[sessions == s]
             signals[sessions == s, :] = \
                 clean(signals[sessions == s],
-                      detrend=detrend, standardize=standardize,
+                      detrend=detrend, normalize=normalize,
                       confounds=session_confounds, low_pass=low_pass,
                       high_pass=high_pass, t_r=2.5)
 
-    # detrend
+    if normalize != 'psc':
+        if standardize:
+            normalize = 'std'
+        else:
+            normalize = None
+
+    # detrend and normalize
     signals = _ensure_float(signals)
-    signals = _standardize(signals, normalize=False, detrend=detrend)
+    signals = _normalize(signals, normalize=normalize, detrend=detrend)
 
     # Remove confounds
     if confounds is not None:
@@ -522,8 +559,13 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
         signals = butterworth(signals, sampling_rate=1. / t_r,
                               low_pass=low_pass, high_pass=high_pass)
 
-    if standardize:
-        signals = _standardize(signals, normalize=True, detrend=False)
+    normalize_methods = ('psc', 'std', None)
+    if normalize not in normalize_methods:
+        raise ValueError("Invalid normalization method: {0}. Please chose "
+                         "a normalization among:\n{1}".format(
+                             normalize, '\n'.join(normalize_methods)))
+    if normalize == 'std':
+        signals = _normalize(signals, normalize='std', detrend=False)
         signals *= np.sqrt(signals.shape[0])  # for unit variance
 
     return signals
