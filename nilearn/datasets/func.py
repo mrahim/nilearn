@@ -1154,6 +1154,7 @@ def fetch_abide_pcp(data_dir=None, n_subjects=None, pipeline='cpac',
 
     results['description'] = _get_dataset_descr(dataset_name)
     results['phenotypic'] = pheno
+    results['path_csv'] = path_csv
     for derivative in derivatives:
         ext = '.1D' if derivative.startswith('rois') else '.nii.gz'
         files = [(file_id + '_' + derivative + ext,
