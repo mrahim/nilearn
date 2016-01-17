@@ -370,10 +370,11 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
     This function can do several things on the input signals, in
     the following order:
 
+    - normalize to PSC
     - detrend
-    - standardize
     - remove confounds
     - low- and high-pass filter
+    - normalize to std
 
     Low-pass filtering improves specificity.
 
@@ -417,12 +418,12 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
 	The ``standardize`` parameter is deprecated and will be removed, use
    	``normalize="std"`` to standardize.
 
-       normalize: {'psc', 'std', None}, optional
-           Signals normalization method.
-           If 'psc' (percent signal change), input signals temporal means are
-           set to 100 prior to any preprocessing.
-           If 'std', output signals are set to unit variance.
-           If None, no normalization is done.
+    normalize: {'psc', 'std', None}, optional
+       Signals normalization method.
+       If 'psc' (percent signal change), input signals temporal means are
+       set to 100 prior to any preprocessing.
+       If 'std', output signals are set to unit variance.
+       If None, no normalization is done.
 
 
     Returns

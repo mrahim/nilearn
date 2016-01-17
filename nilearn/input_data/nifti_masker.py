@@ -83,18 +83,12 @@ class NiftiMasker(BaseMasker, CacheMixin):
         If smoothing_fwhm is not None, it gives the full-width half maximum in
         millimeters of the spatial smoothing to apply to the signal.
 
-    standardize : boolean, optional
-        If standardize is True, the time-series are centered and normed:
-        their mean is put to 0 and their variance to 1 in the time dimension.
-        The ``standardize`` parameter is deprecated and will be removed, use
-        ``normalize="std"`` to standardize.
-
     normalize: {"psc", "std", None}, optional
         The time-series normalization method.
         If 'psc' (percent signal change), input time-series means in the time
         dimension are put to 100 prior to any temporal preprocessing.
-        If 'std', the output time-series are centered and normed:
-        their mean is put to 0 and their variance to 1 in the time dimension.
+        If 'std', the output time-series are standardized, ie centered and
+        normed to unit variance.
         If None, no normalization is done.
 
     detrend : boolean, optional
