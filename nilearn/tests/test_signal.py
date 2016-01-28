@@ -379,14 +379,15 @@ def test_clean_confounds():
     assert_raises(ValueError, nisignal.clean, signals, t_r=None,
                   low_pass=.01)
 
-    # Test without standardizing that constant parts of confounds are
+    # Test with standardizing that constant parts of confounds are
     # accounted for
-    np.testing.assert_almost_equal(nisignal.clean(np.ones((20, 2)),
-                                                  standardize=False,
-                                                  confounds=np.ones(20),
-                                                  detrend=False,
-                                                  ).mean(),
-                                   np.zeros((20, 2)))
+    for normalize in [None, 'psc']:
+        np.testing.assert_almost_equal(nisignal.clean(np.ones((20, 2)),
+                                                      normalize=normalize,
+                                                      confounds=np.ones(20),
+                                                      detrend=False,
+                                                      ).mean(),
+                                       np.zeros((20, 2)))
 
 
 def test_high_variance_confounds():
