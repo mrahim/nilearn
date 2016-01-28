@@ -513,11 +513,11 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
                       confounds=session_confounds, low_pass=low_pass,
                       high_pass=high_pass, t_r=2.5)
 
-    if normalize != 'psc':
-        if standardize:
-            normalize = 'std'
-        else:
-            normalize = None
+    if normalize == 'std' and (not standardize):
+        warnings.simplefilter('always', DeprecationWarning)
+        warnings.warn("Standardizing signal. Parameter standardize is"
+                      " deprecated, use normalize='std' instead.",
+                      DeprecationWarning)
 
     # detrend and normalize
     signals = _ensure_float(signals)

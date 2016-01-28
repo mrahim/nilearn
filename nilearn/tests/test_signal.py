@@ -228,6 +228,7 @@ def test_detrend():
     assert_less(abs(detrended.mean(axis=0)).max(),
                 20. * np.finfo(np.float).eps)
 
+
 def test_mean_of_squares():
     """Test _mean_of_squares."""
     n_samples = 11
@@ -260,12 +261,12 @@ def test_clean_detrending():
     assert_raises(TypeError, nisignal.clean, x, high_pass=False)
 
     # This should remove trends
-    x_detrended = nisignal.clean(x, standardize=False, detrend=True,
+    x_detrended = nisignal.clean(x, normalize=None, detrend=True,
                                  low_pass=None, high_pass=None)
     np.testing.assert_almost_equal(x_detrended, signals, decimal=13)
 
     # This should do nothing
-    x_undetrended = nisignal.clean(x, standardize=False, detrend=False,
+    x_undetrended = nisignal.clean(x, normalize=None, detrend=False,
                                    low_pass=None, high_pass=None)
     assert_false(abs(x_undetrended - signals).max() < 0.06)
 
@@ -274,11 +275,11 @@ def test_clean_frequencies():
     sx1 = np.sin(np.linspace(0, 100, 2000))
     sx2 = np.sin(np.linspace(0, 100, 2000))
     sx = np.vstack((sx1, sx2)).T
-    assert_true(clean(sx, standardize=False, high_pass=0.002, low_pass=None)
+    assert_true(clean(sx, normalize=None, high_pass=0.002, low_pass=None)
                 .max() > 0.1)
-    assert_true(clean(sx, standardize=False, high_pass=0.2, low_pass=None)
+    assert_true(clean(sx, normalize=None, high_pass=0.2, low_pass=None)
                 .max() < 0.01)
-    assert_true(clean(sx, standardize=False, low_pass=0.01).max() > 0.9)
+    assert_true(clean(sx, normalize=None, low_pass=0.01).max() > 0.9)
     assert_raises(ValueError, clean, sx, low_pass=0.4, high_pass=0.5)
 
 
@@ -289,7 +290,7 @@ def test_clean_confounds():
     eps = np.finfo(np.float).eps
     noises1 = noises.copy()
     cleaned_signals = nisignal.clean(noises, confounds=confounds,
-                                     detrend=True, standardize=False)
+                                     detrend=True, normalize=None)
     assert_true(abs(cleaned_signals).max() < 100. * eps)
     np.testing.assert_almost_equal(noises, noises1, decimal=12)
 
@@ -313,13 +314,13 @@ def test_clean_confounds():
     temp += np.arange(confounds.shape[0])
 
     cleaned_signals = nisignal.clean(signals + noises, confounds=confounds,
-                                     detrend=False, standardize=False)
+                                     detrend=False, normalize=None)
     coeffs = np.polyfit(np.arange(cleaned_signals.shape[0]),
                         cleaned_signals, 1)
     assert_true((abs(coeffs) > 1e-3).any())   # trends remain
 
     cleaned_signals = nisignal.clean(signals + noises, confounds=confounds,
-                                     detrend=True, standardize=False)
+                                     detrend=True, normalize=None)
     coeffs = np.polyfit(np.arange(cleaned_signals.shape[0]),
                         cleaned_signals, 1)
     assert_true((abs(coeffs) < 150. * eps).all())  # trend removed
@@ -327,7 +328,7 @@ def test_clean_confounds():
     # Test no-op
     input_signals = 10 * signals
     cleaned_signals = nisignal.clean(input_signals, detrend=False,
-                                     standardize=False)
+                                     normalize=None)
     np.testing.assert_almost_equal(cleaned_signals, input_signals)
 
     cleaned_signals = nisignal.clean(input_signals, detrend=False,
@@ -353,15 +354,15 @@ def test_clean_confounds():
     filename2 = os.path.join(current_dir, "data",
                              "confounds_with_header.csv")
 
-    nisignal.clean(signals, detrend=False, standardize=False,
+    nisignal.clean(signals, detrend=False, normalize=None,
                    confounds=filename1)
-    nisignal.clean(signals, detrend=False, standardize=False,
+    nisignal.clean(signals, detrend=False, normalize=None,
                    confounds=filename2)
-    nisignal.clean(signals, detrend=False, standardize=False,
+    nisignal.clean(signals, detrend=False, normalize=None,
                    confounds=confounds[:, 1])
 
     # Use a list containing two filenames, a 2D array and a 1D array
-    nisignal.clean(signals, detrend=False, standardize=False,
+    nisignal.clean(signals, detrend=False, normalize=None,
                    confounds=[filename1, confounds[:, 0:2],
                               filename2, confounds[:, 2]])
 
