@@ -52,10 +52,10 @@ def _normalize(signals, detrend=False, normalize=None):
 
     signals = signals.copy()
     if normalize == 'psc':
-        mean = signals.mean(axis=0) / 100.
+        mean = signals.mean(axis=0)
         # no rescaling if almost centered data
-        mean[mean < 1e6 * np.finfo(np.float).eps] = 1.
-        signals /= mean
+        mean[mean < 1e8 * np.finfo(np.float).eps] = 100.
+        signals /= mean / 100.
 
     if detrend:
         signals = _detrend(signals, inplace=True)
