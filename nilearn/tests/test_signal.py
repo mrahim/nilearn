@@ -169,6 +169,10 @@ def test_normalize():
     b = nisignal._normalize(a, normalize='psc')
     means = b.mean(axis=0)
     np.testing.assert_almost_equal(means, 100. * np.ones(n_features))
+    # nothing is done with psc normalization for centered signals
+    a = a - a.mean(axis=0)
+    b = nisignal._normalize(a, normalize='psc')
+    np.testing.assert_almost_equal(b, a)
 
     # With trend removal
     a = np.atleast_2d(np.linspace(0, 2., n_features)).T
