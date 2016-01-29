@@ -194,9 +194,13 @@ class BaseDecomposition(BaseEstimator, CacheMixin):
         If smoothing_fwhm is not None, it gives the size in millimeters of the
         spatial smoothing to apply to the signal.
 
-    standardize: boolean, optional
-        If standardize is True, the time-series are centered and normed:
-        their mean is put to 0 and their variance to 1 in the time dimension.
+    normalize: {"psc", "std", None}, optional
+        The time-series normalization method.
+        If 'psc' (percent signal change), input time-series means in the time
+        dimension are put to 100 prior to any temporal preprocessing.
+        If 'std', the output time-series are standardized, ie centered and
+        normed to unit variance.
+        If None, no normalization is done.
 
     detrend: boolean, optional
         This parameter is passed to signal.clean. Please see the related
@@ -263,7 +267,7 @@ class BaseDecomposition(BaseEstimator, CacheMixin):
     def __init__(self, n_components=20,
                  random_state=None,
                  mask=None, smoothing_fwhm=None,
-                 standardize=True, detrend=True,
+                 standardize=True, normalize='std', detrend=True,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='epi', mask_args=None,
@@ -276,6 +280,7 @@ class BaseDecomposition(BaseEstimator, CacheMixin):
 
         self.smoothing_fwhm = smoothing_fwhm
         self.standardize = standardize
+        self.normalize = normalize
         self.detrend = detrend
         self.low_pass = low_pass
         self.high_pass = high_pass

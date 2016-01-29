@@ -38,9 +38,13 @@ class CanICA(MultiPCA):
         Indicate if a Canonical Correlation Analysis must be run after the
         PCA.
 
-    standardize: boolean, optional
-        If standardize is True, the time-series are centered and normed:
-        their variance is put to 1 in the time dimension.
+    normalize: {"psc", "std", None}, optional
+        The time-series normalization method.
+        If 'psc' (percent signal change), input time-series means in the time
+        dimension are put to 100 prior to any temporal preprocessing.
+        If 'std', the output time-series are standardized, ie centered and
+        normed to unit variance.
+        If None, no normalization is done.
 
     threshold: None, 'auto' or float
         If None, no thresholding is applied. If 'auto',
@@ -107,7 +111,7 @@ class CanICA(MultiPCA):
                  threshold='auto',
                  n_init=10,
                  random_state=None,
-                 standardize=True, detrend=True,
+                 standardize=True, normalize='std', detrend=True,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='epi', mask_args=None,
@@ -121,7 +125,7 @@ class CanICA(MultiPCA):
             random_state=random_state,
             # feature_compression=feature_compression,
             mask=mask, smoothing_fwhm=smoothing_fwhm,
-            standardize=standardize, detrend=detrend,
+            standardize=standardize, normalize=normalize, detrend=detrend,
             low_pass=low_pass, high_pass=high_pass, t_r=t_r,
             target_affine=target_affine, target_shape=target_shape,
             mask_strategy=mask_strategy, mask_args=mask_args,

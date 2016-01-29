@@ -516,7 +516,7 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
     if normalize == 'std' and (not standardize):
         warnings.simplefilter('always', DeprecationWarning)
         warnings.warn("Standardizing signal. Parameter standardize is"
-                      " deprecated, use normalize='std' instead.",
+                      " deprecated, to not standardize, use normalize=None",
                       DeprecationWarning)
 
     # detrend and normalize

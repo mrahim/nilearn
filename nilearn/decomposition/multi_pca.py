@@ -39,9 +39,13 @@ class MultiPCA(BaseDecomposition, TransformerMixin):
         it will be computed automatically by a MultiNiftiMasker with default
         parameters.
 
-    standardize : boolean, optional
-        If standardize is True, the time-series are centered and normed:
-        their variance is put to 1 in the time dimension.
+    normalize: {"psc", "std", None}, optional
+        The time-series normalization method.
+        If 'psc' (percent signal change), input time-series means in the time
+        dimension are put to 100 prior to any temporal preprocessing.
+        If 'std', the output time-series are standardized, ie centered and
+        normed to unit variance.
+        If None, no normalization is done.
 
     target_affine: 3x3 or 4x4 matrix, optional
         This parameter is passed to image.resample_img. Please see the
@@ -103,7 +107,7 @@ class MultiPCA(BaseDecomposition, TransformerMixin):
                  smoothing_fwhm=None,
                  do_cca=True,
                  random_state=None,
-                 standardize=False, detrend=False,
+                 standardize=False, normalize=None, detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='epi', mask_args=None,
@@ -119,6 +123,7 @@ class MultiPCA(BaseDecomposition, TransformerMixin):
                                    mask=mask,
                                    smoothing_fwhm=smoothing_fwhm,
                                    standardize=standardize,
+                                   normalize=normalize,
                                    detrend=detrend,
                                    low_pass=low_pass,
                                    high_pass=high_pass, t_r=t_r,
