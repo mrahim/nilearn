@@ -108,7 +108,7 @@ class NiftiLabelsMasker(BaseMasker, CacheMixin):
     # memory and memory_level are used by CacheMixin.
 
     def __init__(self, labels_img, background_label=0, mask_img=None,
-                 smoothing_fwhm=None, standardize=False, normalize=None, 
+                 smoothing_fwhm=None, standardize=False, normalize=None,
                  detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  resampling_target="data",
