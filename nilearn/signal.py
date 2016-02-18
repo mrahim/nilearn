@@ -71,7 +71,11 @@ def _normalize(signals, detrend=False, normalize=None):
     return signals
 
 
-@deprecated('it has been replaced by _normalize and will be removed')
+@deprecated("Function '_standardize' has been renamed to "
+            "'_normalize' and will be removed. "
+            "Parameter 'normalize' is changed from type bool to "
+            "one of {None, 'std', 'psc'} with 'normalize=True' changed to "
+            "'normalize='std' and 'normalize=False' to 'normalize=None'.")
 def _standardize(signals, detrend=False, normalize=True):
     if normalize:
         normalize = 'std'
