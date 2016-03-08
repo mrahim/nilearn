@@ -29,7 +29,7 @@ def _normalize(signals, detrend=False, normalize=None):
     Parameters
     ----------
     signals: numpy.ndarray
-        Timeseries to standardize
+        Timeseries to normalize
 
     detrend: bool
         if detrending of timeseries is requested
@@ -529,11 +529,11 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
     # Remove confounds
     if confounds is not None:
         confounds = _ensure_float(confounds)
-        confounds = _standardize(confounds, normalize=standardize,
+        confounds = _normalize(confounds, normalize=normalize,
                                  detrend=detrend)
-        if not standardize:
+        if normalize is None:
             # Improve numerical stability by controlling the range of
-            # confounds. We don't rely on _standardize as it removes any
+            # confounds. We don't rely on _normalize as it removes any
             # constant contribution to confounds.
             confound_max = np.max(np.abs(confounds), axis=0)
             confound_max[confound_max == 0] = 1
