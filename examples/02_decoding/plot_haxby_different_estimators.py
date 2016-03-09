@@ -116,7 +116,7 @@ for classifier_name, classifier in sorted(classifiers.items()):
             classifier,
             masked_timecourses,
             classification_target,
-            cv=cv, scoring="f1")
+            cv=cv, scoring="f1", verbose=1)
 
         print("%10s: %14s -- scores: %1.2f +- %1.2f, time %.2fs" % (
             classifier_name, category,
