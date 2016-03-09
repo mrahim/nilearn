@@ -18,10 +18,10 @@ def _make_data_from_components(components, affine, shape, rng=None,
     background = -.01 * rng.normal(size=shape) - 2
     background = background[..., np.newaxis]
     for _ in range(n_subjects):
-        this_data = np.dot(rng.normal(size=(40, 4)), components)
+        this_data = np.dot(rng.normal(size=(50, 4)), components)
         this_data += .01 * rng.normal(size=this_data.shape)
         # Get back into 3D for CanICA
-        this_data = np.reshape(this_data, (40,) + shape)
+        this_data = np.reshape(this_data, (50,) + shape)
         this_data = np.rollaxis(this_data, 0, 4)
         # Put the border of the image to zero, to mimic a brain image
         this_data[:5] = background[:5]
