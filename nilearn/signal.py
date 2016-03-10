@@ -23,7 +23,7 @@ from ._utils import check_niimg_4d
 NP_VERSION = distutils.version.LooseVersion(np.version.short_version).version
 
 
-def _normalize(signals, detrend=False, normalize=None):
+def _normalize(signals, detrend=False, normalize='std'):
     """ Center and norm a given signal (time is along first axis)
 
     Parameters
@@ -44,6 +44,11 @@ def _normalize(signals, detrend=False, normalize=None):
     std_signals: numpy.ndarray
         copy of signals, normalized.
     """
+    normalize_methods = ('psc', 'std', None)
+    if normalize not in normalize_methods:
+        raise ValueError("Invalid normalization method: {0}. Please chose "
+                         "a normalization among:\n{1}".format(
+                             normalize, '\n'.join(normalize_methods)))
     if normalize is not None:
 	if signals.shape[0] == 1:
 	    warnings.warn('Normalization of 3D signal has been requested but '
@@ -366,7 +371,7 @@ def _ensure_float(data):
     return data
 
 
-def clean(signals, sessions=None, detrend=True, standardize=True,
+def clean(signals, sessions=None, detrend=True, standardize=None,
           normalize='std', confounds=None, low_pass=None, high_pass=None,
           t_r=2.5):
     """Improve SNR on masked fMRI signals.
@@ -517,9 +522,18 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
                       confounds=session_confounds, low_pass=low_pass,
                       high_pass=high_pass, t_r=2.5)
 
-    if normalize == 'std' and (not standardize):
-        warnings.warn("Standardizing signal. Parameter standardize is"
-                      " deprecated, to not standardize, use normalize=None",
+    # Override normalize by deprecated standardize
+    if standardize:
+        normalize = 'std'
+        warnings.simplefilter('always', DeprecationWarning)
+        warnings.warn("Parameter standardize is deprecated, to standardize "
+                      "use normalize='std'".format(standardize, normalize),
+                      DeprecationWarning)
+    elif standardize is False:
+        normalize = None
+        warnings.simplefilter('always', DeprecationWarning)
+        warnings.warn("Parameter standardize is deprecated, to not standardize"
+                      " use normalize=None".format(standardize, normalize),
                       DeprecationWarning)
 
     # detrend and normalize
@@ -563,11 +577,6 @@ def clean(signals, sessions=None, detrend=True, standardize=True,
         signals = butterworth(signals, sampling_rate=1. / t_r,
                               low_pass=low_pass, high_pass=high_pass)
 
-    normalize_methods = ('psc', 'std', None)
-    if normalize not in normalize_methods:
-        raise ValueError("Invalid normalization method: {0}. Please chose "
-                         "a normalization among:\n{1}".format(
-                             normalize, '\n'.join(normalize_methods)))
     if normalize == 'std':
         signals = _normalize(signals, normalize='std', detrend=False)
         signals *= np.sqrt(signals.shape[0])  # for unit variance

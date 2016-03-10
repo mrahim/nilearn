@@ -115,7 +115,7 @@ class NiftiMapsMasker(BaseMasker, CacheMixin):
 
     def __init__(self, maps_img, mask_img=None,
                  allow_overlap=True,
-                 smoothing_fwhm=None, standardize=False, normalize=None,
+                 smoothing_fwhm=None, standardize=None, normalize=None,
                  detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  resampling_target="data",

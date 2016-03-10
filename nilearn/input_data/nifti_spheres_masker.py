@@ -211,7 +211,7 @@ class NiftiSpheresMasker(BaseMasker, CacheMixin):
     # memory and memory_level are used by CacheMixin.
 
     def __init__(self, seeds, radius=None, mask_img=None, allow_overlap=False,
-                 smoothing_fwhm=None, standardize=False, normalize=None,
+                 smoothing_fwhm=None, standardize=None, normalize=None,
                  detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  memory=Memory(cachedir=None, verbose=0), memory_level=1,

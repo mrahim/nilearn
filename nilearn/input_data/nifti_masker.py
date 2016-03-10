@@ -165,7 +165,7 @@ class NiftiMasker(BaseMasker, CacheMixin):
     """
 
     def __init__(self, mask_img=None, sessions=None, smoothing_fwhm=None,
-                 standardize=False, normalize=None, detrend=False,
+                 standardize=None, normalize=None, detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='background',

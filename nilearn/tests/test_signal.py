@@ -15,6 +15,7 @@ import nibabel
 # not possible)
 from nilearn import signal as nisignal
 from nilearn.signal import clean
+from nilearn._utils.testing import assert_warns
 import scipy.signal
 
 
@@ -393,6 +394,21 @@ def test_clean_confounds():
                                                       detrend=False,
                                                       ).mean(),
                                        np.zeros((20, 2)))
+
+    # Test standardize overrides normalize
+    for normalize in [None, 'psc', 'std']:
+        for standardize in [True, False]:
+            cleaned_signals = nisignal.clean(input_signals,
+                                             standardize=standardize,
+                                             normalize=normalize)
+            np.testing.assert_almost_equal(
+                cleaned_signals, nisignal.clean(input_signals,
+                                                standardize=standardize))
+
+    # Check a warning is raised when using standadize
+    assert_warns(DeprecationWarning, nisignal.clean, signals, standardize=True)
+    assert_warns(DeprecationWarning, nisignal.clean, signals,
+                 standardize=False)
 
 
 def test_high_variance_confounds():
