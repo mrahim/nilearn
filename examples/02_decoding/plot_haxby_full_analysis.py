@@ -70,7 +70,7 @@ for mask_name in mask_names:
     print("Working on mask %s" % mask_name)
     # For decoding, standardizing is often very important
     mask_filename = haxby_dataset[mask_name][0]
-    masker = NiftiMasker(mask_img=mask_filename, standardize=True)
+    masker = NiftiMasker(mask_img=mask_filename, normalize="std")
     masked_timecourses = masker.fit_transform(
         func_filename)[np.logical_not(resting_state)]
 

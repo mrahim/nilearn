@@ -107,7 +107,7 @@ class MultiPCA(BaseDecomposition, TransformerMixin):
                  smoothing_fwhm=None,
                  do_cca=True,
                  random_state=None,
-                 standardize=False, normalize=None, detrend=False,
+                 standardize=None, normalize=None, detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='epi', mask_args=None,

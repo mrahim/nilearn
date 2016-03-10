@@ -195,7 +195,7 @@ def test_graph_net_classifier_score():
     X_, mask = to_niimgs(X, (2, 2, 2))
     gnc = SpaceNetClassifier(mask=mask, alphas=1. / .01 / X.shape[0],
                              l1_ratios=1., tol=1e-10,
-                             standardize=False, verbose=0,
+                             normalize=None, verbose=0,
                              screening_percentile=100.).fit(X_, y)
     accuracy = gnc.score(X_, y)
     assert_equal(accuracy, accuracy_score(y, gnc.predict(X_)))
@@ -213,7 +213,7 @@ def test_log_reg_vs_graph_net_two_classes_iris(C=.01, tol=1e-10,
     X_, mask = to_niimgs(X, (2, 2, 2))
     tvl1 = SpaceNetClassifier(
         mask=mask, alphas=1. / C / X.shape[0], l1_ratios=1., tol=tol,
-        verbose=0, max_iter=1000, penalty="tv-l1", standardize=False,
+        verbose=0, max_iter=1000, penalty="tv-l1", normalize=None,
         screening_percentile=100.).fit(X_, y)
     sklogreg = LogisticRegression(penalty="l1", fit_intercept=True,
                                   tol=tol, C=C).fit(X, y)

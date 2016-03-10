@@ -83,7 +83,7 @@ from nilearn.input_data import NiftiMasker
 
 # For decoding, standardizing is often very important
 nifti_masker = NiftiMasker(mask_img=mask_img, sessions=session,
-                           standardize=True, memory='nilearn_cache',
+                           normalize="std", memory='nilearn_cache',
                            memory_level=1)
 fmri_masked = nifti_masker.fit_transform(fmri_img)
 

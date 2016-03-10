@@ -38,7 +38,7 @@ from nilearn.input_data import NiftiMasker
 
 # For decoding, standardizing is often very important
 mask_filename = haxby_dataset.mask_vt[0]
-masker = NiftiMasker(mask_img=mask_filename, standardize=True)
+masker = NiftiMasker(mask_img=mask_filename, normalize="std")
 func_filename = haxby_dataset.func[0]
 masked_timecourses = masker.fit_transform(
     func_filename)[np.logical_not(resting_state)]

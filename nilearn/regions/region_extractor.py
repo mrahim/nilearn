@@ -229,10 +229,14 @@ class RegionExtractor(NiftiMapsMasker):
         random walker segementation algorithm on these markers for region
         separation.
 
-    standardize: bool, True or False, default False, optional
-        If True, the time series signals are centered and normalized by
-        putting their mean to 0 and variance to 1. Recommended to
-        set as True if signals are not already standardized.
+    normalize: {"psc", "std", None}, optional
+        The time-series normalization method.
+        If 'psc' (percent signal change), input time-series means in the time
+        dimension are put to 100 prior to any temporal preprocessing.
+        If 'std', the output time-series are standardized, ie centered and
+        normed to unit variance.
+        If None, no normalization is done.
+        Recommended to set as "std" if signals are not already standardized.
         passed to class NiftiMapsMasker.
 
     detrend: bool, True or False, default False, optional
@@ -288,8 +292,8 @@ class RegionExtractor(NiftiMapsMasker):
     """
     def __init__(self, maps_img, mask_img=None, min_region_size=1350,
                  threshold=1., thresholding_strategy='ratio_n_voxels',
-                 extractor='local_regions', standardize=False, detrend=False,
-                 low_pass=None, high_pass=None, t_r=None,
+                 extractor='local_regions', standardize=None, normalize=None,
+                 detrend=False, low_pass=None, high_pass=None, t_r=None,
                  memory=Memory(cachedir=None), memory_level=0, verbose=0):
         super(RegionExtractor, self).__init__(
             maps_img=maps_img, mask_img=mask_img,

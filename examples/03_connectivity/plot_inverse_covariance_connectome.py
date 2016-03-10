@@ -40,7 +40,7 @@ print('First subject functional nifti images (4D) are at: %s' %
 ##############################################################################
 # Extract time series
 from nilearn.input_data import NiftiMapsMasker
-masker = NiftiMapsMasker(maps_img=atlas_filename, standardize=True,
+masker = NiftiMapsMasker(maps_img=atlas_filename, normalize="std",
                          memory='nilearn_cache', verbose=5)
 
 time_series = masker.fit_transform(data.func[0],

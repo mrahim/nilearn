@@ -575,10 +575,11 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
         (which is typically smaller). If '100' is given, all the features
         are used, regardless of the number of voxels.
 
-    standardize : bool, optional (default True):
-        If set, then the data (X, y) are centered to have mean zero along
-        axis 0. This is here because nearly all linear models will want
-        their data to be centered.
+    normalize: {"psc", "std", None}, optional (default "std"):
+        If "std", then we'll center the data (X, y) have mean zero along
+        axis 0.
+        This is here because nearly all linear models will want their data
+        to be centered.
 
     fit_intercept : bool, optional (default True)
         Fit or not an intercept.
@@ -652,8 +653,8 @@ class BaseSpaceNet(LinearModel, RegressorMixin, CacheMixin):
                  l1_ratios=.5, alphas=None, n_alphas=10, mask=None,
                  target_affine=None, target_shape=None, low_pass=None,
                  high_pass=None, t_r=None, max_iter=1000, tol=5e-4,
-                 memory=Memory(None), memory_level=1,
-                 standardize=True, verbose=1, n_jobs=1, eps=1e-3,
+                 memory=Memory(None), memory_level=1, standardize=None,
+                 normalize="std", verbose=1, n_jobs=1, eps=1e-3,
                  cv=8, fit_intercept=True, screening_percentile=20.,
                  debias=False):
         self.penalty = penalty
@@ -1033,8 +1034,9 @@ class SpaceNetClassifier(BaseSpaceNet):
         mask of the data and volume of a standard brain.  If '100' is given,
         all the features are used, regardless of the number of voxels.
 
-    standardize : bool, optional (default True):
-        If set, then we'll center the data (X, y) have mean zero along axis 0.
+    normalize: {"psc", "std", None}, optional (default "std"):
+        If "std", then we'll center the data (X, y) have mean zero along
+        axis 0.
         This is here because nearly all linear models will want their data
         to be centered.
 
@@ -1107,7 +1109,8 @@ class SpaceNetClassifier(BaseSpaceNet):
                  l1_ratios=.5, alphas=None, n_alphas=10, mask=None,
                  target_affine=None, target_shape=None, low_pass=None,
                  high_pass=None, t_r=None, max_iter=1000, tol=1e-4,
-                 memory=Memory(None), memory_level=1, standardize=True,
+                 memory=Memory(None), memory_level=1, 
+                 standardize=None, normalize="std",
                  verbose=1, n_jobs=1, eps=1e-3,
                  cv=8, fit_intercept=True, screening_percentile=20.,
                  debias=False):
@@ -1289,7 +1292,7 @@ class SpaceNetRegressor(BaseSpaceNet):
                  n_alphas=10, mask=None, target_affine=None,
                  target_shape=None, low_pass=None, high_pass=None, t_r=None,
                  max_iter=1000, tol=1e-4, memory=Memory(None), memory_level=1,
-                 standardize=True, verbose=1, n_jobs=1, eps=1e-3, cv=8,
+                 normalize="std", verbose=1, n_jobs=1, eps=1e-3, cv=8,
                  fit_intercept=True, screening_percentile=20., debias=False):
         super(SpaceNetRegressor, self).__init__(
             penalty=penalty, is_classif=False, l1_ratios=l1_ratios,

@@ -267,7 +267,7 @@ class BaseDecomposition(BaseEstimator, CacheMixin):
     def __init__(self, n_components=20,
                  random_state=None,
                  mask=None, smoothing_fwhm=None,
-                 standardize=True, normalize='std', detrend=True,
+                 standardize=None, normalize='std', detrend=True,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='epi', mask_args=None,

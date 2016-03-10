@@ -60,7 +60,7 @@ from nilearn.input_data import NiftiMasker
 mask_filename = haxby_dataset.mask
 # For decoding, standardizing is often very important
 nifti_masker = NiftiMasker(mask_img=mask_filename, sessions=session,
-                           smoothing_fwhm=4, standardize=True,
+                           smoothing_fwhm=4, normalize="std",
                            memory="nilearn_cache", memory_level=1)
 func_filename = haxby_dataset.func[0]
 X = nifti_masker.fit_transform(func_filename)

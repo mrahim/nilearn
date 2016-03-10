@@ -111,7 +111,7 @@ class CanICA(MultiPCA):
                  threshold='auto',
                  n_init=10,
                  random_state=None,
-                 standardize=True, normalize='std', detrend=True,
+                 standardize=None, normalize='std', detrend=True,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='epi', mask_args=None,

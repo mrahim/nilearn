@@ -64,7 +64,7 @@ from nilearn.regions import RegionExtractor
 extractor = RegionExtractor(components_img, threshold=0.5,
                             thresholding_strategy='ratio_n_voxels',
                             extractor='local_regions',
-                            standardize=True, min_region_size=1350)
+                            normalize="std", min_region_size=1350)
 # Just call fit() to process for regions extraction
 extractor.fit()
 # Extracted regions are stored in regions_img_

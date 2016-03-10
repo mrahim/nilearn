@@ -58,7 +58,7 @@ from nilearn import input_data
 
 seed_masker = input_data.NiftiSpheresMasker(
     pcc_coords, radius=8,
-    detrend=True, standardize=True,
+    detrend=True, normalize="std",
     low_pass=0.1, high_pass=0.01, t_r=2.,
     memory='nilearn_cache', memory_level=1, verbose=0)
 
@@ -75,7 +75,7 @@ seed_time_series = seed_masker.fit_transform(func_filename,
 # arguments as in the seed_masker in addition to smoothing with a 6 mm kernel
 brain_masker = input_data.NiftiMasker(
     smoothing_fwhm=6,
-    detrend=True, standardize=True,
+    detrend=True, normalize="std",
     low_pass=0.1, high_pass=0.01, t_r=2.,
     memory='nilearn_cache', memory_level=1, verbose=0)
 

@@ -37,7 +37,7 @@ print('First subject resting-state nifti image (4D) is located at: %s' %
 ############################################################################
 # Extract the time series
 from nilearn.input_data import NiftiMapsMasker
-masker = NiftiMapsMasker(maps_img=atlas_filename, standardize=True,
+masker = NiftiMapsMasker(maps_img=atlas_filename, normalize="std",
                          memory='nilearn_cache', verbose=5)
 
 time_series = masker.fit_transform(data.func[0],

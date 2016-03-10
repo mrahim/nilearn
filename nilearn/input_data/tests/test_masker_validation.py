@@ -13,7 +13,7 @@ from nilearn.input_data import MultiNiftiMasker, NiftiMasker
 class OwningClass(BaseEstimator):
 
     def __init__(self, mask=None, smoothing_fwhm=None,
-                 standardize=False, detrend=False,
+                 standardize=None, normalize=None, detrend=False,
                  low_pass=None, high_pass=None, t_r=None,
                  target_affine=None, target_shape=None,
                  mask_strategy='background', mask_args=None,

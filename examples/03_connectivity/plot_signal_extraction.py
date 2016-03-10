@@ -40,7 +40,7 @@ fmri_filenames = data.func[0]
 # Extract signals on a parcellation defined by labels using the
 # NiftiLabelsMasker
 from nilearn.input_data import NiftiLabelsMasker
-masker = NiftiLabelsMasker(labels_img=atlas_filename, standardize=True,
+masker = NiftiLabelsMasker(labels_img=atlas_filename, normalize="std",
                            memory='nilearn_cache', verbose=5)
 
 # Here we go from nifti files to the signal time series in a numpy

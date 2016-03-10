@@ -60,7 +60,7 @@ print('First white-matter anatomy image (3D) is located at: %s' %
 
 ### Preprocess data ###########################################################
 nifti_masker = NiftiMasker(
-    standardize=False,
+    normalize=None,
     smoothing_fwhm=2,
     memory='nilearn_cache')  # cache options
 gm_maps_masked = nifti_masker.fit_transform(gray_matter_map_filenames)

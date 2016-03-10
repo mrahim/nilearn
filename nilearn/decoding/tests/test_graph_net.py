@@ -222,7 +222,7 @@ def test_tikhonov_regularization_vs_graph_net():
     graph_net = BaseSpaceNet(
         mask=mask_, alphas=1. * X.shape[0], l1_ratios=0., max_iter=400,
         fit_intercept=False,
-        screening_percentile=100., standardize=False)
+        screening_percentile=100., normalize=None)
     graph_net.fit(X_, y.copy())
     coef_ = graph_net.coef_[0]
     graph_net_perf = 0.5 / y.size * extmath.norm(
