@@ -50,10 +50,10 @@ def _normalize(signals, detrend=False, normalize='std'):
                          "a normalization among:\n{1}".format(
                              normalize, '\n'.join(normalize_methods)))
     if normalize is not None:
-	if signals.shape[0] == 1:
-	    warnings.warn('Normalization of 3D signal has been requested but '
-	        'would lead to zero values. Skipping.')
-	    return signals
+        if signals.shape[0] == 1:
+            warnings.warn('Normalization of 3D signal has been requested but '
+                          'would lead to zero values. Skipping.')
+            return signals
 
     signals = signals.copy()
     if normalize == 'psc':
