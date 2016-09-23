@@ -42,7 +42,7 @@ from nilearn.input_data import NiftiMasker
 # thus we need to use mask_strategy='epi' to compute the mask from the
 # EPI images
 masker = NiftiMasker(smoothing_fwhm=8, memory='nilearn_cache', memory_level=1,
-                     mask_strategy='epi', standardize=True)
+                     mask_strategy='epi', normalize="std")
 data_masked = masker.fit_transform(func_filename)
 
 # Concatenate all the subjects

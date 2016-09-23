@@ -61,7 +61,7 @@ plotting.plot_roi(mask_filename, bg_img=haxby_dataset.anat[0],
 # about. Here we use standardizing of the data, as it is often important
 # for decoding
 from nilearn.input_data import NiftiMasker
-masker = NiftiMasker(mask_img=mask_filename, standardize=True)
+masker = NiftiMasker(mask_img=mask_filename, normalize="std")
 
 # We give the masker a filename and retrieve a 2D array ready
 # for machine learning with scikit-learn

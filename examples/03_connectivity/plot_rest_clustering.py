@@ -42,7 +42,7 @@ from nilearn import input_data
 # EPI images
 nifti_masker = input_data.NiftiMasker(memory='nilearn_cache',
                                       mask_strategy='epi', memory_level=1,
-                                      standardize=False)
+                                      normalize=None)
 
 func_filename = dataset.func[0]
 # The fit_transform call computes the mask and extracts the time-series

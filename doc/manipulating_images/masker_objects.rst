@@ -200,7 +200,7 @@ preparation::
    NiftiMasker(detrend=False, high_pass=None, low_pass=None, mask_args=None,
          mask_img=None, mask_strategy='background',
          memory=Memory(cachedir=None), memory_level=1, sample_mask=None,
-         sessions=None, smoothing_fwhm=None, standardize=False, t_r=None,
+         sessions=None, smoothing_fwhm=None, normalize=None, t_r=None,
          target_affine=None, target_shape=None, verbose=0)
 
 The meaning of each parameter is described in the documentation of
@@ -239,8 +239,9 @@ Temporal Filtering and confound removal
 :class:`NiftiMasker` can also improve aspects of temporal data
 properties, before conversion to voxel signals.
 
-- **Standardization**. Parameter ``standardize``: Signals can be
-  standardized (scaled to unit variance). 
+- **Normalization**. Parameter ``normalize``: Signals can be
+  standardized (scaled to unit variance) or set to Percent Signal Change
+  (PSC) unit.
 
 - **Frequency filtering**. Low-pass and high-pass filters can be used to
   remove artifacts. Parameters: ``high_pass`` and ``low_pass``, specified
