@@ -36,7 +36,7 @@ from nilearn import input_data
 
 masker = input_data.NiftiSpheresMasker(
     dmn_coords, radius=8,
-    detrend=True, normalize="std",
+    detrend=True, normalize="psc",
     low_pass=0.1, high_pass=0.01, t_r=2.5,
     memory='nilearn_cache', memory_level=1, verbose=2)
 
@@ -54,7 +54,7 @@ for time_serie, label in zip(time_series.T, labels):
 
 plt.title('Default Mode Network Time Series')
 plt.xlabel('Scan number')
-plt.ylabel('Normalized signal')
+plt.ylabel('signal (PSC)')
 plt.legend()
 plt.tight_layout()
 
